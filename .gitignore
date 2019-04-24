@@ -1,0 +1,5 @@
+__pucache__/
+*.pyc
+*.tmp
+*.txt
+*private*
