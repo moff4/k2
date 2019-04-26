@@ -2,6 +2,7 @@
 import sys
 import asyncio
 import socket
+import logging
 
 from k2.utils.autocfg import AutoCFG
 
@@ -9,7 +10,7 @@ from k2.utils.autocfg import AutoCFG
 class AbstractAeon:
     """
         Simple echo server using asyncio
-        U can r
+        U can overwrite client_connected_cb for your own server
     """
 
     __defaults = {
@@ -33,6 +34,7 @@ class AbstractAeon:
             self.cfg.loop = asyncio.get_event_loop()
         self._task = None
         self._server = None
+        self.log = logging.getLogger()
 
     async def client_connected_cb(self, reader, writer):
         try:
@@ -41,11 +43,11 @@ class AbstractAeon:
                 data = await reader.read(100)
                 message = data.decode()
                 addr = writer.get_extra_info('peername')
-                print('recived [{host}:{port}] {msg}'.format(host=addr[0], port=addr[1], msg=message.rstrip()))
+                self.log.Debug('recived [{host}:{port}] {msg}'.format(host=addr[0], port=addr[1], msg=message.rstrip()))
                 writer.write(data)
                 await writer.drain()
         except Exception as e:
-            print('Error')
+            self.log.error('Error: %s' % e)
         finally:
             writer.close()
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import logging
+
 from k2.aeon.parser import parse_data
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
@@ -15,7 +17,7 @@ class Request:
             reader - io stream
             writer - io stream
         kwargs:
-            id - unique id of the request (default: 0)
+            request_header - str: Request-ID HTTP-header (lower case) (default: x-request-id)
             believe_x_from_y - bool: if True source ip = X-From-Y (default: False)
             cache_min - int - seconds for HTTP header 'Cache-Control: max-age'
             max_header_length - max length of any HTTP-header (default: 1024B)
@@ -27,10 +29,13 @@ class Request:
 
     name = 'request'
     defaults = {
-        'id': 0,
+        'request_header': 'x-request-id',
         'believe_x_from_y': False,
         'cache_min': 120,
     }
+
+    # objects must be asyncio.corutines
+    postware = []
 
     def __init__(self, addr, reader, writer, **kwargs):
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
@@ -40,6 +45,7 @@ class Request:
         self._writer = writer
         self._source_ip = self._addr[0]
         self.port = self._addr[1]
+        self.log = logging.getLogger()
 
     async def read(self):
         data = await parse_data(self._reader, **self._kwargs)
@@ -66,13 +72,6 @@ class Request:
             'before_send': [],
             'after_send': [],
         }
-
-    def __call__(self, st='', _type='notify'):
-        """
-            local log function
-            extra save request-id
-        """
-        self.log(st='[{id}] {st}'.format(id=self.cfg['id'], st=st), _type=_type)
 
     # ==========================================================================
     #                             USER API
@@ -115,10 +114,17 @@ class Request:
         self._ssl = value
 
     async def send(self, resp):
-        res = resp.export()
-        print('res: %s' % res)
-        self._writer.write(res)
-        await self._writer.drain()
+        try:
+            res = resp.export()
+            self._writer.write(res)
+            f, args = '[%s:%s] %s %s' (self.ip, self.port, res.code, res.url)
+            if self.cfg.request_header in self._headers:
+                f = ''.join(['(%s)', f])
+                args = (self._headers[self.cfg.request_header], *args)
+            self.log.info(f, *args)
+            await self._writer.drain()
+        except Exception as e:
+            self.log.error('[%s:%s] send response: %s', self.ip, self.port, e)
 
     def is_local(self):
         """

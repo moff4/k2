@@ -93,17 +93,19 @@ MAX_DATA_LEN = 8 * (2 ** 20)
 MAX_HEADER_COUNT = 64
 MAX_HEADER_LEN = 2 ** 10
 
-async def readln(reader, max_len=None):
+
+async def readln(reader, max_len=None, ignore_zeros=False):
     st = []
     a = True
     while a:
         a = await reader.read(1)
-        if a == b'\n':
-            break
-        if a and a != b'\r':
-            st.append(a[0])
-            if max_len is not None and len(st) > max_len:
-                raise ValueError('Header is too long')
+        if not st and (ignore_zeros or a[0] >= 32):
+            if a == b'\n':
+                break
+            if a and a != b'\r':
+                st.append(a[0])
+                if max_len is not None and len(st) > max_len:
+                    raise ValueError('Header is too long')
     return bytes(st)
 
 

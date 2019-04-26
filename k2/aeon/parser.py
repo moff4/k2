@@ -37,7 +37,7 @@ async def parse_data(reader, **kwargs):
             'data': b'',
         }
     )
-    st = await readln(reader, max_len=cfg.max_header_length)
+    st = await readln(reader, max_len=cfg.max_header_length, ignore_zeros=True)
 
     tmp = []
     i = 0
