@@ -34,7 +34,6 @@ class AbstractAeon:
             self.cfg.loop = asyncio.get_event_loop()
         self._task = None
         self._server = None
-        self.log = logging.getLogger()
 
     async def client_connected_cb(self, reader, writer):
         try:
@@ -43,11 +42,11 @@ class AbstractAeon:
                 data = await reader.read(100)
                 message = data.decode()
                 addr = writer.get_extra_info('peername')
-                self.log.Debug('recived [{host}:{port}] {msg}'.format(host=addr[0], port=addr[1], msg=message.rstrip()))
+                logging.debug('recived [{host}:{port}] {msg}'.format(host=addr[0], port=addr[1], msg=message.rstrip()))
                 writer.write(data)
                 await writer.drain()
         except Exception as e:
-            self.log.error('Error: %s' % e)
+            logging.error('Error: %s' % e)
         finally:
             writer.close()
 
@@ -80,6 +79,7 @@ class AbstractAeon:
     def run(self):
         self._server = self.cfg.loop.run_until_complete(self.task)
         try:
+            logging.info('start server on port: %s' % self.cfg.port)
             self.cfg.loop.run_forever()
         except KeyboardInterrupt:
             pass

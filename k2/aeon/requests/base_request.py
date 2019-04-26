@@ -45,7 +45,6 @@ class Request:
         self._writer = writer
         self._source_ip = self._addr[0]
         self.port = self._addr[1]
-        self.log = logging.getLogger()
 
     async def read(self):
         data = await parse_data(self._reader, **self._kwargs)
@@ -117,14 +116,14 @@ class Request:
         try:
             res = resp.export()
             self._writer.write(res)
-            f, args = '[%s:%s] %s %s' (self.ip, self.port, res.code, res.url)
+            f, args = '[%s:%s] %s %s', (self.ip, self.port, resp.code, self.url)
             if self.cfg.request_header in self._headers:
                 f = ''.join(['(%s)', f])
                 args = (self._headers[self.cfg.request_header], *args)
-            self.log.info(f, *args)
+            logging.info(f, *args)
             await self._writer.drain()
         except Exception as e:
-            self.log.error('[%s:%s] send response: %s', self.ip, self.port, e)
+            logging.error('[%s:%s] send response: %s', self.ip, self.port, e)
 
     def is_local(self):
         """

@@ -99,7 +99,7 @@ async def readln(reader, max_len=None, ignore_zeros=False):
     a = True
     while a:
         a = await reader.read(1)
-        if not st and (ignore_zeros or a[0] >= 32):
+        if (not st and (not ignore_zeros or a[0] >= 32)) or st:
             if a == b'\n':
                 break
             if a and a != b'\r':
