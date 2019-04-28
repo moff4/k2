@@ -11,6 +11,7 @@ from k2.utils.http import (
     MAX_DATA_LEN,
     MAX_HEADER_COUNT,
     MAX_HEADER_LEN,
+    MAX_URI_LENGTH,
     readln,
 )
 
@@ -39,9 +40,12 @@ async def parse_data(reader, **kwargs):
             'data': b'',
         }
     )
-    st = await readln(reader, max_len=cfg.max_header_length, ignore_zeros=True)
-    if len(st) > (self.cfg.max_uri_length + 12):
-        raise AeonResponse('URI too long', code=414)
+    st = await readln(
+        reader,
+        max_len=cfg.max_uri_length + 12,
+        ignore_zeros=True,
+        exception=AeonResponse('URI too long', code=414),
+    )
     tmp = []
     i = 0
     while len(st) > i and st[i] > 32:
@@ -74,30 +78,32 @@ async def parse_data(reader, **kwargs):
         i += 1
     req.http_version = bytes(tmp).decode('utf-8')
     if req.http_version not in cfg.allowed_http_version:
-        raise ValueError('Unexpected HTTP version: {}'.format(req.http_version))
+        raise AeonResponse('Unexpected HTTP version: {}'.format(req.http_version), code=418)
 
+    err_413 = AeonResponse(code=413)
     while True:
-        st = await readln(reader, max_len=cfg.max_header_length)
+        st = await readln(
+            reader,
+            max_len=cfg.max_header_length,
+            exception=err_413
+        )
         if not st:
             break
 
         st = st.decode('utf-8').split(':')
         key = st[0].lower()
         if key in req.headers:
-            raise ValueError('Got 2 same headers ({key})'.format(key=key))
+            raise AeonResponse('Got 2 same headers ({key})'.format(key=key), code=400)
         elif len(req.headers) >= cfg.max_header_count:
-            raise ValueError('Too many headers')
+            raise AeonResponse('Too many headers', code=400)
         req.headers[key] = ':'.join(st[1:]).strip()
 
     if any(map(lambda x: x in req.url, {'..', '//'})):
-        raise ValueError('Unallowed req: {url}'.format(**req))
-
-    for i in req.args:
-        req.args[i] = req.args[i].decode('utf-8')
+        raise AeonResponse('Unallowed req: {url}'.format(**req), code=400)
 
     if 'content-length' in req.headers:
         _len = int(req.headers['content-length'])
         if _len >= cfg.max_data_length:
-            raise ValueError('Too much data')
+            raise AeonResponse('Too much data', code=413)
         req.data = reader.recv(_len)
     return req

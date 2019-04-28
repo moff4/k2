@@ -109,20 +109,6 @@ SMTH_HAPPENED = '''
 </body></html>
 '''
 
-DIR_TEMPLATE = '''
-<html><head>
-<title>kek-server</title>
-</head><body>
-<h1>{url}</h1>
-<ul>
-{cells}
-</ul>
-</body></html>
-'''
-DIR_CELL_TEMPLATE = '''
-<li><a href="{url}{filename}">{filename}</a></li>
-'''
-
 CONTENT_HTML = {'Content-type': 'text/html; charset=utf-8'}
 CONTENT_JS = {'Content-type': 'application/javascript; charset=utf-8'}
 CONTENT_JSON = {'Content-type': 'text/json; charset=utf-8'}
@@ -140,27 +126,28 @@ MAX_HEADER_LEN = 2 ** 10
 MAX_URI_LENGTH = 256
 
 
-async def readln(reader, max_len=None, ignore_zeros=False):
+async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
     st = []
     a = True
     while a:
         a = await reader.read(1)
+        if not a:
+            break
         if (not st and (not ignore_zeros or a[0] >= 32)) or st:
             if a == b'\n':
                 break
-            if a and a != b'\r':
+            if a != b'\r':
                 st.append(a[0])
                 if max_len is not None and len(st) > max_len:
-                    raise ValueError('Header is too long')
+                    raise ValueError('line is too long') if exception is None else exception
     return bytes(st)
 
 
 def Content_type(st) -> str:
     """
-        get filename and decide content-type header
-        st == req.url
+        get filename or url as str
+        return content-type header as dict
     """
-    extra = ''
     st = st.split('.')[-1]
     if st in {'html', 'css', 'txt', 'csv', 'xml', 'js', 'json', 'php', 'md'}:
         type_1 = 'text'
@@ -170,7 +157,6 @@ def Content_type(st) -> str:
             type_2 = 'markdown'
         elif st == 'html':
             type_2 = st
-            extra = '; charset=utf-8'
         else:
             type_2 = st
 
@@ -185,8 +171,9 @@ def Content_type(st) -> str:
         else:
             type_2 = 'webm'
     else:
-        return {'Content-type': 'text/plain'}
-    return {'Content-type': '{}/{}{}'.format(type_1, type_2, extra)}
+        type_1 = 'text'
+        type_2 = 'plain'
+    return {'Content-type': '{}/{}'.format(type_1, type_2)}
 
 
 def is_local_ip(addr) -> bool:

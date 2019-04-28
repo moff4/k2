@@ -58,10 +58,16 @@ class Aeon(AbstractAeon):
                     else:
                         for ware in self.middleware:
                             await run_ware(ware, module=module, request=req, args=args)
-                        resp = module(request=req, **args)
+                        handler = getattr(module, req.method.lower())
+                        if inspect.iscoroutinefunction(handler):
+                            resp = await handler(request=req, **args)
+                        else:
+                            resp = handler(request=req, **args)
                 except AeonResponse as e:
                     resp = Response(data=e.data, code=e.code, headers=e.headers)
                 except Exception as e:
+                    logging.error('[%s:%s] ex: %s', addr[0], addr[1], e)
+                    req.keep_alive = False
                     resp = Response(data=SMTH_HAPPENED, code=500)
 
                 logging.debug('[%s:%s] gonna send response', *addr)
@@ -73,13 +79,11 @@ class Aeon(AbstractAeon):
                 for ware in self.postware:
                     await run_ware(ware, module=module, request=req, args=args, response=resp)
 
-                keep_alive = req.headers.get('connection', 'keep-alive') != 'close'
+                keep_alive = req.headers.get('connection', 'keep-alive') != 'close' and req.keep_alive
         except Exception as e:
             logging.error('[%s:%s] handler error: %s', addr[0], addr[1], e)
 
     def add_site_module(self, key, target):
-        if not callable(target):
-            raise TypeError('target (%s) must be callable' % target)
         self.site_modules[key] = target
 
     def add_middleware(self, target):

@@ -38,6 +38,7 @@ class Request:
     postware = []
 
     def __init__(self, addr, reader, writer, **kwargs):
+        self._initialized = False
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
         self._kwargs = kwargs
         self._addr = addr
@@ -45,6 +46,15 @@ class Request:
         self._writer = writer
         self._source_ip = self._addr[0]
         self.port = self._addr[1]
+        self.keep_alive = True
+
+        self._real_ip = None
+        self._url = None
+        self._args = {}
+        self._method = None
+        self._http_version = None
+        self._headers = {}
+        self._data = b''
 
     async def read(self):
         data = await parse_data(self._reader, **self._kwargs)
@@ -71,6 +81,7 @@ class Request:
             'before_send': [],
             'after_send': [],
         }
+        self._initialized = True
 
     # ==========================================================================
     #                             USER API
@@ -116,14 +127,18 @@ class Request:
         try:
             res = resp.export()
             self._writer.write(res)
-            f, args = '[%s:%s] %s %s', (self.ip, self.port, resp.code, self.url)
+            f, args = '[%s:%s] %s %s %s', (self.ip, self.port, resp.code, self.url, self.args)
             if self.cfg.request_header in self._headers:
                 f = ''.join(['(%s)', f])
                 args = (self._headers[self.cfg.request_header], *args)
             logging.info(f, *args)
             await self._writer.drain()
+        except (BrokenPipeError, IOError) as e:
+            logging.warning('[%s:%s] pipe error: %s', self.ip, self.port, e)
+            self.keep_alive = False
         except Exception as e:
             logging.error('[%s:%s] send response: %s', self.ip, self.port, e)
+            self.keep_alive = False
 
     def is_local(self):
         """
