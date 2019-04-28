@@ -5,6 +5,7 @@ from urllib.parse import (
     parse_qs,
 )
 
+from k2.aeon.exceptions import AeonResponse
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     MAX_DATA_LEN,
@@ -23,6 +24,7 @@ async def parse_data(reader, **kwargs):
         'max_header_length': MAX_HEADER_LEN,
         'max_header_count': MAX_HEADER_COUNT,
         'max_data_length': MAX_DATA_LEN,
+        'max_uri_length': MAX_URI_LENGTH,
         'allowed_methods': {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'},
         'allowed_http_version': {'HTTP/1.1'},
     }
@@ -38,7 +40,8 @@ async def parse_data(reader, **kwargs):
         }
     )
     st = await readln(reader, max_len=cfg.max_header_length, ignore_zeros=True)
-
+    if len(st) > (self.cfg.max_uri_length + 12):
+        raise AeonResponse('URI too long', code=414)
     tmp = []
     i = 0
     while len(st) > i and st[i] > 32:
@@ -48,9 +51,9 @@ async def parse_data(reader, **kwargs):
 
     req.method = bytes(tmp).decode()
     if not req.method:
-        raise ValueError('Empty method field')
+        raise AeonResponse('Empty method field', code=400)
     elif req.method not in cfg.allowed_methods:
-        raise ValueError('Unexpected method "{}"'.format(req.method))
+        raise AeonResponse('Unexpected method "{}"'.format(req.method), code=405)
 
     tmp = []
     for i in st:

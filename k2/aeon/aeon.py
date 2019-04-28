@@ -22,7 +22,7 @@ class Aeon(AbstractAeon):
     # value - callable site_module
     site_modules = {}
 
-    # objects must be asyncio.corutines
+    # objects must be callable or asyncio.corutines
     middleware = []
     postware = []
 
@@ -45,23 +45,24 @@ class Aeon(AbstractAeon):
         logging.debug('[%s:%s] new connection', *addr)
         try:
             while keep_alive:
-                req = Request(addr, reader, writer)
-                logging.debug('[%s:%s] gonna data read', *addr)
-                await req.read()
-                logging.debug('[%s:%s] data read', *addr)
+                resp = None
+                try:
+                    req = Request(addr, reader, writer)
+                    logging.debug('[%s:%s] gonna data read', *addr)
+                    await req.read()
+                    logging.debug('[%s:%s] data read', *addr)
 
-                module, args = self.chooser(req)
-                if module is None or not hasattr(module, req.method.lower()):
-                    resp = Response(data=NOT_FOUND, code=404)
-                else:
-                    try:
+                    module, args = self.chooser(req)
+                    if module is None or not hasattr(module, req.method.lower()):
+                        resp = Response(data=NOT_FOUND, code=404)
+                    else:
                         for ware in self.middleware:
                             await run_ware(ware, module=module, request=req, args=args)
                         resp = module(request=req, **args)
-                    except AeonResponse as e:
-                        resp = Response(data=e.data, code=e.code, headers=e.headers)
-                    except Exception as e:
-                        resp = Response(data=SMTH_HAPPENED, code=500)
+                except AeonResponse as e:
+                    resp = Response(data=e.data, code=e.code, headers=e.headers)
+                except Exception as e:
+                    resp = Response(data=SMTH_HAPPENED, code=500)
 
                 logging.debug('[%s:%s] gonna send response', *addr)
                 await req.send(resp)
@@ -76,6 +77,17 @@ class Aeon(AbstractAeon):
         except Exception as e:
             logging.error('[%s:%s] handler error: %s', addr[0], addr[1], e)
 
-    # add site_module
-    # add middleware
-    # add postware
+    def add_site_module(self, key, target):
+        if not callable(target):
+            raise TypeError('target (%s) must be callable' % target)
+        self.site_modules[key] = target
+
+    def add_middleware(self, target):
+        if not callable(target):
+            raise TypeError('target (%s) must be callable' % target)
+        self.middleware[key] = target
+
+    def add_postware(self, target):
+        if not callable(target):
+            raise TypeError('target (%s) must be callable' % target)
+        self.postware[key] = target

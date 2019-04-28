@@ -38,20 +38,18 @@ class Response:
         return self.data
 
     @property
-    def code(self) -> int:
+    def code(self):
         return self._code
 
     @code.setter
     def code(self, code):
+        if code not in HTTP_CODE_MSG:
+            raise ValueError('Code must be in k2.utils.http.HTTP_CODE_MSG')
         self._code = code
 
     @property
     def http_version(self) -> str:
         return self._http_version
-
-    @http_version.setter
-    def http_version(self, value):
-        self._http_version = value
 
     @property
     def data(self) -> bytes:
