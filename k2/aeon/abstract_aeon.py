@@ -25,7 +25,8 @@ class AbstractAeon:
         'reuse_address': None,
         'reuse_port': None,
         'ssl_handshake_timeout': None,
-        'start_serving': True
+        'start_serving': True,
+        'site_dir': './var/',
     }
 
     def __init__(self, **kwargs):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 from urllib.parse import (
     urlparse,
     parse_qs,
@@ -28,6 +28,7 @@ async def parse_data(reader, **kwargs):
         'max_uri_length': MAX_URI_LENGTH,
         'allowed_methods': {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'},
         'allowed_http_version': {'HTTP/1.1'},
+        'site_dir': './var/',
     }
     cfg = AutoCFG(__defaults).update_fields(kwargs)
     req = AutoCFG(
@@ -98,7 +99,7 @@ async def parse_data(reader, **kwargs):
             raise AeonResponse('Too many headers', code=400)
         req.headers[key] = ':'.join(st[1:]).strip()
 
-    if any(map(lambda x: x in req.url, {'..', '//'})):
+    if os.path.relpath(req.url, start=self.cfg.site_dir).startswith('..'):
         raise AeonResponse('Unallowed req: {url}'.format(**req), code=400)
 
     if 'content-length' in req.headers:
