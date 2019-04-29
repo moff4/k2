@@ -3,9 +3,11 @@
 from .aeon import Aeon
 from .exceptions import AeonResponse
 from .responses import Response
+from .sitemodules import StaticSiteModule
 
 __all__ = [
     'Aeon',
     'AeonResponse',
     'Response',
+    'StaticSiteModule',
 ]

@@ -60,18 +60,23 @@ class Aeon(AbstractAeon):
                             await run_ware(ware, module=module, request=req, args=args)
                         handler = getattr(module, req.method.lower())
                         if inspect.iscoroutinefunction(handler):
-                            resp = await handler(request=req, **args)
+                            resp = await handler(req, **args)
                         else:
-                            resp = handler(request=req, **args)
+                            resp = handler(req, **args)
                 except AeonResponse as e:
+                    logging.exception('[%s:%s] ex: %s', addr[0], addr[1], e)
                     resp = Response(data=e.data, code=e.code, headers=e.headers)
+                except RuntimeError as e:
+                    logging.warning(e)
+                    req.keep_alive = False
                 except Exception as e:
-                    logging.error('[%s:%s] ex: %s', addr[0], addr[1], e)
+                    logging.exception('[%s:%s] ex: %s', addr[0], addr[1], e)
                     req.keep_alive = False
                     resp = Response(data=SMTH_HAPPENED, code=500)
 
                 logging.debug('[%s:%s] gonna send response', *addr)
-                await req.send(resp)
+                if resp is not None:
+                    await req.send(resp)
 
                 for ware in req.postware:
                     await run_ware(ware, module=module, request=req, args=args, response=resp)

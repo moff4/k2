@@ -6,10 +6,11 @@ from k2.aeon import Response
 
 
 class StaticSiteModule:
-    def __init__(self, static_root, show_index=False, chunk_size=(2 ** 18)):
+    def __init__(self, static_root, show_index=False, chunk_size=(2 ** 18), allow_links=False):
         self._static_root = static_root
         self._show_index = show_index
         self._chunk_size = chunk_size
+        self._allow_links = allow_links
 
     def get(self, req):
         headers = {}
@@ -45,9 +46,53 @@ class StaticSiteModule:
                     data = f.read(size if size > 0 else 0)
                     code = 206
         elif self._show_index and os.path.isdir(filename):
-            pass
-            # FIXME
-            # generate index page
+            urls = []
+            url = req.url.rstrip('/')
+            print(filename)
+            for _fn in os.listdir(filename):
+                fn = ''.join([filename, _fn])
+                if os.path.isdir(fn):
+                    urls.append(
+                        {
+                            'name': _fn,
+                            'type': 'Dir',
+                            'url': '/'.join([url, _fn, '']),
+                        }
+                    )
+                elif os.path.islink(fn):
+                    if self._allow_links:
+                        urls.append(
+                            {
+                                'name': _fn,
+                                'type': 'Link',
+                                'url': '/'.join([url, _fn]),
+                            }
+                        )
+                elif os.path.isfile(fn):
+                    urls.append(
+                        {
+                            'name': _fn,
+                            'type': 'File',
+                            'url': '/'.join([url, _fn]),
+                        }
+                    )
+            data = '''
+            <html>
+                <body>
+                    <h1>index of {url}</h1>
+                    {rows}
+                </body>
+            </html>
+            '''.format(
+                url=req.url,
+                rows=''.join(
+                    [
+                        '<div>{type}: <a href="{url}">{name}</a></div>'.format(**item)
+                        for item in urls
+                    ]
+                )
+            )
+            code = 200
 
         return Response(
             data=data,

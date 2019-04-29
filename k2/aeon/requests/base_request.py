@@ -48,7 +48,7 @@ class Request:
         self.port = self._addr[1]
         self.keep_alive = True
 
-        self._real_ip = None
+        self._real_ip = self._addr
         self._url = None
         self._args = {}
         self._method = None

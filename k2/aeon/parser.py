@@ -47,6 +47,9 @@ async def parse_data(reader, **kwargs):
         ignore_zeros=True,
         exception=AeonResponse('URI too long', code=414),
     )
+    st = st.strip()
+    if not st:
+        raise RuntimeError('empty string')
     tmp = []
     i = 0
     while len(st) > i and st[i] > 32:
@@ -99,8 +102,8 @@ async def parse_data(reader, **kwargs):
             raise AeonResponse('Too many headers', code=400)
         req.headers[key] = ':'.join(st[1:]).strip()
 
-    if os.path.relpath(req.url, start=self.cfg.site_dir).startswith('..'):
-        raise AeonResponse('Unallowed req: {url}'.format(**req), code=400)
+    if os.path.normpath(req.url).startswith('..'):
+        raise AeonResponse('Unallowed req: {url} {}'.format(**req), code=400)
 
     if 'content-length' in req.headers:
         _len = int(req.headers['content-length'])
