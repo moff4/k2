@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import re
-import inspect
+import asyncio
 import logging
 
 from k2.aeon.abstract_aeon import AbstractAeon
 from k2.aeon.requests import Request
 from k2.aeon.responses import Response
 from k2.aeon.exceptions import AeonResponse
+from k2.aeon.ws import WSHandler
+from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     NOT_FOUND,
     SMTH_HAPPENED,
@@ -19,23 +21,30 @@ class Aeon(AbstractAeon):
     """
 
     # key - url as regular expression
-    # value - callable site_module
-    site_modules = {}
+    # value - dict:
+    #  target -> site_module / WSHandler
+    #  type -> 'cgi' / 'ws'
+    _endpoints = {}
 
     # objects must be callable or asyncio.corutines
     middleware = []
     postware = []
 
     def chooser(self, req):
-        for key in self.site_modules:
+        """
+            find enpoint
+            return (endpoint dict, params)
+            or (None, None)
+        """
+        for key in self._endpoints:
             m = re.match(key, req.url)
             if m is not None:
-                return self.site_modules[key], m.groupdict()
+                return self._endpoints[key], m.groupdict()
         return None, None
 
     async def client_connected_cb(self, reader, writer):
         async def run_ware(ware, *a, **b):
-            if inspect.iscoroutinefunction(ware):
+            if asyncio.iscoroutinefunction(ware):
                 await ware(*a, **b)
             else:
                 ware(*a, **b)
@@ -52,17 +61,27 @@ class Aeon(AbstractAeon):
                     await req.read()
                     logging.debug('[%s:%s] data read', *addr)
 
-                    module, args = self.chooser(req)
-                    if module is None or not hasattr(module, req.method.lower()):
-                        resp = Response(data=NOT_FOUND, code=404)
-                    else:
-                        for ware in self.middleware:
-                            await run_ware(ware, module=module, request=req, args=args)
-                        handler = getattr(module, req.method.lower())
-                        if inspect.iscoroutinefunction(handler):
-                            resp = await handler(req, **args)
+                    endpoint, args = self.chooser(req)
+                    if endpoint.type == 'cgi':
+                        module = endpoint.target
+                        if module is None or not hasattr(module, req.method.lower()):
+                            resp = Response(data=NOT_FOUND, code=404)
                         else:
-                            resp = handler(req, **args)
+                            for ware in self.middleware:
+                                await run_ware(ware, module=module, request=req, args=args)
+                            handler = getattr(module, req.method.lower())
+                            if asyncio.iscoroutinefunction(handler):
+                                resp = await handler(req, **args)
+                            else:
+                                resp = handler(req, **args)
+                    elif endpoint.type == 'ws':
+                        if req.headers.get('upgrade', '').lower() == 'websocket':
+                            await endpoint.target(req, **args).mainloop()
+                            keep_alive = False
+                        else:
+                            resp = Response(data=NOT_FOUND, code=404)
+                    else:
+                        resp = Response(data=NOT_FOUND, code=404)
                 except AeonResponse as e:
                     logging.exception('[%s:%s] ex: %s', addr[0], addr[1], e)
                     resp = Response(data=e.data, code=e.code, headers=e.headers)
@@ -89,7 +108,12 @@ class Aeon(AbstractAeon):
             logging.error('[%s:%s] handler error: %s', addr[0], addr[1], e)
 
     def add_site_module(self, key, target):
-        self.site_modules[key] = target
+        self._endpoints[key] = AutoCFG(
+            {
+                'target': target,
+                'type': 'cgi'
+            }
+        )
 
     def add_middleware(self, target):
         if not callable(target):
@@ -100,3 +124,13 @@ class Aeon(AbstractAeon):
         if not callable(target):
             raise TypeError('target (%s) must be callable' % target)
         self.postware[key] = target
+
+    def add_ws_handler(self, key, target):
+        if not issubclass(target, WSHandler):
+            raise TypeError('target (%s) must be subclass of WSHandler' % target)
+        self._endpoints[key] = AutoCFG(
+            {
+                'target': target,
+                'type': 'ws'
+            }
+        )

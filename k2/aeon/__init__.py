@@ -4,10 +4,12 @@ from .aeon import Aeon
 from .exceptions import AeonResponse
 from .responses import Response
 from .sitemodules import StaticSiteModule
+from .ws import WSHandler
 
 __all__ = [
     'Aeon',
-    'AeonResponse',
     'Response',
+    'WSHandler',
+    'AeonResponse',
     'StaticSiteModule',
 ]

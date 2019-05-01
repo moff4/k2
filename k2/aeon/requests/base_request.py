@@ -83,6 +83,9 @@ class Request:
         }
         self._initialized = True
 
+    def get_rw(self):
+        return (self._reader, self._writer)
+
     @property
     def url(self):
         return self._url

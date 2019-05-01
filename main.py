@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 import logging
-
 from k2.aeon import (
     Aeon,
-    Response,
-    StaticSiteModule,
+    WSHandler,
 )
 
 
@@ -15,12 +13,9 @@ def main():
     server = Aeon(
         site_dir='.',
     )
-    server.add_site_module(
-        '/',
-        StaticSiteModule(
-            static_root='.',
-            show_index=True,
-        )
+    server.add_ws_handler(
+        '/ws/',
+        WSHandler
     )
     server.run()
 

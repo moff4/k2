@@ -11,12 +11,46 @@ class AutoCFG(dict):
     def __setattr__(self, key, value):
         self[key] = value
 
+    @staticmethod
+    def __deep_update(d1, d2, create=True):
+        for i in d2:
+            if i in d1:
+                if isinstance(d2[i], dict) and isinstance(d1[i], dict):
+                    d1[i] = AutoCFG.__deep_update(d1[i], d2[i], create=create)
+                else:
+                    d1[i] = d2[i]
+            elif create:
+                d1[i] = d2[i]
+        return d1
+
     def update_fields(self, *a, **b):
         """
             only update fields
             does not create new
         """
         for d in a:
+            if not isinstance(d, dict):
+                raise ValueError('update_fields param must be dict')
             self.update({k: d[k] for k in d if k in self})
         self.update({k: b[k] for k in b if k in self})
+        return self
+
+    def deep_update_fields(self, *a, **b):
+        for d in a:
+            if not isinstance(d, dict):
+                raise ValueError('deep_update_fields param must be dict')
+            self.__deep_update(self, d, create=False)
+        self.__deep_update(self, b, create=False)
+        return self
+
+    def update_missing(self, *a, **b):
+        """
+            only insert new fields
+            does not update existing
+        """
+        for d in a:
+            if not isinstance(d, dict):
+                raise ValueError('update_missing param must be dict')
+            self.update({k: d[k] for k in d if k not in self})
+        self.update({k: b[k] for k in b if k not in self})
         return self

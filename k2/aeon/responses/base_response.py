@@ -91,7 +91,7 @@ class Response:
     def export(self) -> str:
         data = self._extra_prepare_data()
         data = data.encode() if isinstance(data, str) else data
-        headers = AutoCFG(STANDART_HEADERS).update_fields(self._headers)
+        headers = self._headers.update_missing(STANDART_HEADERS)
         headers.update({'Content-Length': len(data)})
         return b''.join(
             [
