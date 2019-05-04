@@ -118,12 +118,12 @@ class Aeon(AbstractAeon):
     def add_middleware(self, target):
         if not callable(target):
             raise TypeError('target (%s) must be callable' % target)
-        self.middleware[key] = target
+        self.middleware.append(target)
 
     def add_postware(self, target):
         if not callable(target):
             raise TypeError('target (%s) must be callable' % target)
-        self.postware[key] = target
+        self.postware.append(target)
 
     def add_ws_handler(self, key, target):
         if not issubclass(target, WSHandler):
