@@ -88,6 +88,7 @@ HTTP_METHODS = [
     'PUT',
     'DELETE',
 ]
+
 HTTP_VERSIONS = [
     'HTTP/1.1',
 ]
@@ -100,12 +101,13 @@ NOT_FOUND = '''
 <p>The requested URL was not found on this kek-server.</p>
 </body></html>
 '''
+
 SMTH_HAPPENED = '''
 <html><head>
 <title>500 Smth happened</title>
 </head><body>
 <h1>Smth happened</h1>
-<p>The requested URL found error this kek-server.</p>
+<p>The requested URL caused an error on this kek-server.</p>
 </body></html>
 '''
 
@@ -143,7 +145,7 @@ async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
     return bytes(st)
 
 
-def Content_type(st) -> str:
+def content_type(st):
     """
         get filename or url as str
         return content-type header as dict
@@ -178,8 +180,8 @@ def Content_type(st) -> str:
 
 def is_local_ip(addr) -> bool:
     return any(
-        map(
-            lambda x: addr.startswith(x),
-            PRIVETE_IP,
+        (
+            addr.startswith(x)
+            for x in PRIVETE_IP
         )
     )
