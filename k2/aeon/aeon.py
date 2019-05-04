@@ -105,7 +105,7 @@ class Aeon(AbstractAeon):
 
                 keep_alive = req.headers.get('connection', 'keep-alive') != 'close' and req.keep_alive
         except Exception as e:
-            logging.error('[%s:%s] handler error: %s', addr[0], addr[1], e)
+            logging.error(f'[{addr[0]}:{addr[1]}] handler error: {e}')
 
     def add_site_module(self, key, target):
         self._endpoints[key] = AutoCFG(
@@ -117,17 +117,17 @@ class Aeon(AbstractAeon):
 
     def add_middleware(self, target):
         if not callable(target):
-            raise TypeError('target (%s) must be callable' % target)
+            raise TypeError(f'target ({target}) must be callable')
         self.middleware.append(target)
 
     def add_postware(self, target):
         if not callable(target):
-            raise TypeError('target (%s) must be callable' % target)
+            raise TypeError(f'target ({target}) must be callable')
         self.postware.append(target)
 
     def add_ws_handler(self, key, target):
         if not issubclass(target, WSHandler):
-            raise TypeError('target (%s) must be subclass of WSHandler' % target)
+            raise TypeError(f'target ({target}) must be subclass of WSHandler')
         self._endpoints[key] = AutoCFG(
             {
                 'target': target,

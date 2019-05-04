@@ -76,22 +76,21 @@ class StaticSiteModule:
                             'url': '/'.join([url, _fn]),
                         }
                     )
-            data = '''
+            data = f'''
             <html>
                 <body>
-                    <h1>index of {url}</h1>
-                    {rows}
+                    <h1>index of {req.url}</h1>
+                    {
+                        ''.join(
+                            [
+                                f'<div>{item[type]}: <a href="{item[url]}">{item[name]}</a></div>'
+                                for item in urls
+                            ]
+                        )
+                    }
                 </body>
             </html>
-            '''.format(
-                url=req.url,
-                rows=''.join(
-                    [
-                        '<div>{type}: <a href="{url}">{name}</a></div>'.format(**item)
-                        for item in urls
-                    ]
-                )
-            )
+            '''
             code = 200
 
         return Response(

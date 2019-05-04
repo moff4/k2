@@ -61,7 +61,7 @@ async def parse_data(reader, **kwargs):
     if not req.method:
         raise AeonResponse('Empty method field', code=400)
     elif req.method not in cfg.allowed_methods:
-        raise AeonResponse('Unexpected method "{}"'.format(req.method), code=405)
+        raise AeonResponse(f'Unexpected method "{req.method}"', code=405)
 
     tmp = []
     for i in st:
@@ -82,7 +82,7 @@ async def parse_data(reader, **kwargs):
         i += 1
     req.http_version = bytes(tmp).decode('utf-8')
     if req.http_version not in cfg.allowed_http_version:
-        raise AeonResponse('Unexpected HTTP version: {}'.format(req.http_version), code=418)
+        raise AeonResponse(f'Unexpected HTTP version: {req.http_version}', code=418)
 
     err_413 = AeonResponse(code=413)
     while True:
@@ -97,13 +97,13 @@ async def parse_data(reader, **kwargs):
         st = st.decode('utf-8').split(':')
         key = st[0].lower()
         if key in req.headers:
-            raise AeonResponse('Got 2 same headers ({key})'.format(key=key), code=400)
+            raise AeonResponse(f'Got 2 same headers ({key})', code=400)
         elif len(req.headers) >= cfg.max_header_count:
             raise AeonResponse('Too many headers', code=400)
         req.headers[key] = ':'.join(st[1:]).strip()
 
     if os.path.normpath(req.url).startswith('..'):
-        raise AeonResponse('Unallowed req: {url} {}'.format(**req), code=400)
+        raise AeonResponse(f'Unallowed req: {req.url}', code=400)
 
     if 'content-length' in req.headers:
         _len = int(req.headers['content-length'])

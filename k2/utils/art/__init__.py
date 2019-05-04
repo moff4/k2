@@ -25,7 +25,7 @@ def unmarshal(data=None, fd=None, mask=None):
     if data is None and fd is None:
         raise ValueError('Expected param "data" of "fd"')
     if data is not None and all(map(lambda x: not isinstance(data, x), {bytes, str})):
-        raise ValueError('Unexpected type of "data" ({}), expected bytes or str'.format(type(data)))
+        raise ValueError(f'Unexpected type of "data" ({type(data)}), expected bytes or str')
     return Parser(
         mask=mask,
         fd=fd,

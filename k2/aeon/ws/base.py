@@ -95,19 +95,6 @@ class BaseWSHandler:
     async def close(self):
         await self.finish()
 
-    def __call__(self, st='', _type='notify'):
-        """
-            local log function
-            extra save request-id
-        """
-        self.log(
-            st='[{id}] {st}'.format(
-                id=self.req.id,
-                st=st
-            ),
-            _type=_type
-        )
-
     async def mainloop(self):
         self.setup()
         try:
@@ -241,11 +228,7 @@ class BaseWSHandler:
                 headers={
                     'Upgrade': 'websocket',
                     'Connection': 'Upgrade',
-                    'Sec-WebSocket-Accept': '{}'.format(
-                        self.calculate_response_key(
-                            key
-                        ),
-                    ),
+                    'Sec-WebSocket-Accept': self.calculate_response_key(key),
                 },
             ),
         )

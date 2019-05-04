@@ -43,7 +43,7 @@ class AbstractAeon:
                 data = await reader.read(100)
                 message = data.decode()
                 addr = writer.get_extra_info('peername')
-                logging.debug('recived [{host}:{port}] {msg}'.format(host=addr[0], port=addr[1], msg=message.rstrip()))
+                logging.debug(f'recived [{addr[0]}:{addr[1]}] {message.rstrip()}')
                 writer.write(data)
                 await writer.drain()
         except Exception as e:

@@ -42,27 +42,17 @@ def apply(obj, scheme, key=None):
     extra = '' if key is None else ''.join(['for ', key])
     if not isinstance(scheme, dict):
         raise ValueError(
-            'scheme must be dict {extra}'.format(
-                extra=extra
-            )
+            f'scheme must be dict {extra}'
         )
     if 'pre_call' in scheme:
         obj = scheme['pre_call'](obj)
 
     if scheme['type'] in MAP:
         if not isinstance(obj, MAP[scheme['type']]):
-            raise ValueError(
-                'expected type "{type}" {extra} ; got {src_type}'.format(
-                    src_type=type(obj),
-                    type=scheme['type'],
-                    extra=extra
-                )
-            )
+            raise ValueError(f'''expected type "{scheme['type']}" {extra} ; got {type(obj)}''')
         elif 'filter' in scheme and not scheme['filter'](obj):
             raise ValueError(
-                '"{key}" not passed filter'.format(
-                    key=key,
-                )
+                f'"{key}" not passed filter'
             )
 
         if MAP[scheme['type']] == MAP[list]:
@@ -70,20 +60,10 @@ def apply(obj, scheme, key=None):
         elif MAP[scheme['type']] == MAP[dict]:
             unex = {i for i in obj if i not in scheme['value']}
             if unex:
-                raise ValueError(
-                    'Got unexpected keys: "{keys}" {extra};'.format(
-                        keys='", "'.join([str(i) for i in unex]),
-                        extra=extra,
-                    )
-                )
+                raise ValueError(f'''Got unexpected keys: "{'", "'.join([str(i) for i in unex])}" {extra};''')
             missed = {i for i in scheme['value'] if i not in obj and 'default' not in scheme['value'][i]}
             if missed:
-                raise ValueError(
-                    'expected keys "{keys}" {extra}'.format(
-                        keys='", "'.join([str(i) for i in missed]),
-                        extra=extra
-                    )
-                )
+                raise ValueError(f'''expected keys "{'", "'.join([str(i) for i in missed])}" {extra}''')
 
             obj = {
                 i:
@@ -97,9 +77,7 @@ def apply(obj, scheme, key=None):
                 for i in scheme['value']
             }
     else:
-        raise ValueError(
-            'Scheme has unknown type "{}"'.format(scheme['type'])
-        )
+        raise ValueError(f'''Scheme has unknown type "{scheme['type']}"''')
 
     if 'post_call' in scheme:
         obj = scheme['post_call'](obj)

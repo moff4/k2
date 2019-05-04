@@ -58,7 +58,7 @@ class Planner:
 
     def add_task(self, key, target, **kwargs):
         if key in self._tasks:
-            raise ValueError('key "{}" already in use'.format(key))
+            raise ValueError(f'key "{key}" already in use')
         self._tasks[key] = Task(target=target, **kwargs)
 
     def run(self):

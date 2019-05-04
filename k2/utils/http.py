@@ -175,7 +175,7 @@ def content_type(st):
     else:
         type_1 = 'text'
         type_2 = 'plain'
-    return {'Content-type': '{}/{}'.format(type_1, type_2)}
+    return {'Content-type': f'{type_1}/{type_2}'}
 
 
 def is_local_ip(addr) -> bool:

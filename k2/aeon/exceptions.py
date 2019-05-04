@@ -9,3 +9,6 @@ class AeonResponse(Exception):
         self.data = b.get('data', SMTH_HAPPENED)
         self.headers = b.get('headers', None)
         self.code = b.get('code', 500)
+
+    def __str__(self):
+        return f'<AeonResponse: {self.code}>'

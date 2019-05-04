@@ -156,7 +156,7 @@ class Coder:
 
     def _type(self, data, unallowed_types=()):
         if isinstance(data, unallowed_types):
-            raise ValueError('This type ({}) is not allowed here'.format(type(data)))
+            raise ValueError(f'This type ({type(data)}) is not allowed here')
         try:
             return next(
                 (
@@ -166,7 +166,7 @@ class Coder:
                 )
             )(data)
         except StopIteration:
-            raise TypeError('Unexpected type: {} for {}'.format(type(data), str(data)))
+            raise TypeError(f'Unexpected type: {type(data)} for {str(data)}')
 
     def magic(self):
         self.result = bytes(self._type(self.data))

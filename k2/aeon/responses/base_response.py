@@ -78,10 +78,10 @@ class Response:
         self._cookies.append(
             '; '.join(
                 [
-                    '{}={}'.format(name, quote(str(value)))
+                    f'{name}={quote(str(value))}'
                 ] + [
-                    '{}={}'.format(key, quote(str(value)))
-                    for key, value in kwoptions.items()
+                    f'{key}={quote(str(val))}'
+                    for key, val in kwoptions.items()
                 ] + list(
                     options
                 )
@@ -97,11 +97,9 @@ class Response:
             [
                 '\r\n'.join(
                     [
-                        '{http_version} {code} {code_msg}'.format(
-                            http_version=self.http_version,
-                            code=204 if len(data) <= 0 and self.code in {200, 201} else self.code,
-                            code_msg=HTTP_CODE_MSG[self.code]
-                        ),
+                        f'{self.http_version} '
+                        f'{204 if len(data) <= 0 and self.code in {200, 201} else self.code} '
+                        f'{HTTP_CODE_MSG[self.code]}',
                     ] + [
                         ''.join([i, ': ', str(headers[i])])
                         for i in filter(
@@ -109,7 +107,7 @@ class Response:
                             headers,
                         )
                     ] + [
-                        'Set-Cookie: {}'.format(k)
+                        f'Set-Cookie: {k}'
                         for k in self._cookies
                     ] + ['\r\n'],
                 ).encode(),
