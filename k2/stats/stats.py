@@ -9,10 +9,16 @@ from k2.stats.types import (
     TimeEventCounter
 )
 
-# stat-name -> StatObject
+"""
+stat-name => {
+    'obj': StatObject,
+    'desc': description,
+}
+"""
 Collection = {}
 
 TypeMap = {
+    'time_event_counter': TimeEventCounter,
     'event_counter': EventCounter,
     'counter': Counter,
     'single': Single,
@@ -21,41 +27,49 @@ TypeMap = {
 }
 
 
-def new(key, type, *a, **b):
+def new(key, type, description=None, *a, **b):
     if type not in TypeMap:
         raise ValueError(f'unknown stat type "{type}"')
-    Collection[key] = TypeMap[type](*a, **b)
+    Collection[key] = {
+        'obj': TypeMap[type](*a, **b),
+        'desc': description,
+    }
 
 
 def update(key, *a, **b):
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
-    Collection[key].update(*a, **b)
+    Collection[key]['obj'].update(*a, **b)
 
 
 def add(key, *a, **b):
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
-    Collection[key].add(*a, **b)
+    Collection[key]['obj'].add(*a, **b)
 
 
-def reset(key):
-    if key not in Collection:
-        raise KeyError(f'stat "{key}" does not exists')
-    Collection[key].reset()
+def reset(key=None):
+    if key:
+        if key not in Collection:
+            raise KeyError(f'stat "{key}" does not exists')
+        Collection[key]['obj'].reset()
+    else:
+        for key in Collection:
+            Collection[key]['obj'].reset()
 
 
 def export_one(key):
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
-    Collection[key].export()
+    Collection[key]['obj'].export()
 
 
 def export():
     return {
         key: {
-            'data': Collection[key].export(),
-            'type': Collection[key].get_type(),
+            'data': Collection[key]['obj'].export(),
+            'type': Collection[key]['obj'].get_type(),
+            'description': Collection[key]['desc'],
         }
         for key in Collection
     }
