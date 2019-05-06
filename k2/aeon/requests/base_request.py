@@ -135,7 +135,7 @@ class Request:
 
             logging.info(f, *args)
 
-            stats.add(key=f'{resp.code // 100}xx')
+            await stats.add(key=f'aeon-{resp.code // 100}xx')
 
             await self._writer.drain()
         except (BrokenPipeError, IOError) as e:

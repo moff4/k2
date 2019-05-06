@@ -35,7 +35,7 @@ class Aeon(AbstractAeon):
     def __init__(self, *a, **b):
         super().__init__(self, *a, **b)
         for i in range(1, 6):
-            stats.new(key=f'{i}xx', type='time_event_counter', description=f'HTTP status code {i}xx')
+            stats.new(key=f'aeon-{i}xx', type='time_event_counter', description=f'HTTP status code {i}xx')
         stats.new(key='request_log', type='time_events', description='log for each request')
         stats.new(key='ws_connections', type='counter', description='opened ws conenctions')
         stats.new(key='connections', type='counter', description='opened conenctions')
@@ -62,7 +62,7 @@ class Aeon(AbstractAeon):
         keep_alive = True
         addr = writer.get_extra_info('peername')
         logging.debug(f'[{addr[0]}:{addr[0]}] new connection')
-        stats.add('connections')
+        await stats.add('connections')
         try:
             while keep_alive:
                 resp = None
@@ -72,7 +72,7 @@ class Aeon(AbstractAeon):
                     await req.read()
                     logging.debug(f'[{addr[0]}:{addr[1]}] data read')
 
-                    stats.add(key='request_log', value=f'{req.method} {req.url} {req.args}')
+                    await stats.add(key='request_log', value=f'{req.method} {req.url} {req.args}')
 
                     endpoint, args = self.chooser(req)
                     if endpoint.type == 'cgi':
@@ -96,10 +96,10 @@ class Aeon(AbstractAeon):
                     elif endpoint.type == 'ws':
                         if req.headers.get('upgrade', '').lower() == 'websocket':
                             try:
-                                stats.add('ws_connections')
+                                await stats.add('ws_connections')
                                 await endpoint.target(req, **args).mainloop()
                             finally:
-                                stats.add('ws_connections', -1)
+                                await stats.add('ws_connections', -1)
                             keep_alive = False
                         else:
                             resp = Response(data=NOT_FOUND, code=404)
@@ -130,7 +130,7 @@ class Aeon(AbstractAeon):
         except Exception as e:
             logging.error(f'[{addr[0]}:{addr[1]}] handler error: {e}')
         finally:
-            stats.add('connections', -1)
+            await stats.add('connections', -1)
 
     def add_site_module(self, key, target, methods=None):
         if methods is None:

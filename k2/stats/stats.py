@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import asyncio
 
 from k2.stats.types import (
     Single,
@@ -28,36 +29,54 @@ TypeMap = {
     'time_event_counter': TimeEventCounter,
 }
 
+async def __callback(event, key, *a, **b):
+    if Collection[key]['callback'] is not None:
+        if callable(Collection[key]['callback']):
+            Collection[key]['callback'](event, key, *a, **b)
+        else:
+            await Collection[key]['callback'](event, key, *a, **b)
 
-def new(key, type, description=None, *a, **b):
+
+def new(key, type, description=None, callback=None, *a, **b):
     if type not in TypeMap:
         raise ValueError(f'unknown stat type "{type}"')
     Collection[key] = {
         'obj': TypeMap[type](*a, **b),
         'desc': description,
+        'callback': callback,
     }
 
 
-def update(key, *a, **b):
+def update(key, description=None, callback=None, *a, **b):
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
+    if description is not None:
+        Collection[key]['desc'] = description
+    if callable is not None:
+        if callable(callback) or asyncio.iscoroutinefunction(callback):
+            Collection[key]['callback'] = callback
+        else:
+            raise TypeError('callback must be callable or asyncio.coroutine')
     Collection[key]['obj'].update(*a, **b)
 
 
-def add(key, *a, **b):
+async def add(key, *a, **b):
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
     Collection[key]['obj'].add(*a, **b)
+    await __callback(event='add', key=key, *a, **b)
 
 
-def reset(key=None):
+async def reset(key=None):
     if key:
         if key not in Collection:
             raise KeyError(f'stat "{key}" does not exists')
         Collection[key]['obj'].reset()
+        await __callback(event='reset', key=key)
     else:
         for key in Collection:
             Collection[key]['obj'].reset()
+            await __callback(event='reset', key=key)
 
 
 def export_one(key):

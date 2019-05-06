@@ -26,8 +26,8 @@ class StatsCGI:
             }
         )
 
-    def post(self, req):
-        reset(
+    async def post(self, req):
+        await reset(
             key=req.args.get('key', None)
         )
         return Response(code=200, data=STATUS_OK)
