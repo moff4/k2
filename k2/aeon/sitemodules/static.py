@@ -3,14 +3,16 @@ import os
 
 from k2.aeon import AeonResponse
 from k2.aeon import Response
+from k2.aeon.responses import StaticResponse
 
 
 class StaticSiteModule:
-    def __init__(self, static_root, show_index=False, chunk_size=(2 ** 18), allow_links=False):
+    def __init__(self, static_root, show_index=False, chunk_size=(2 ** 18), allow_links=False, cache_min=120):
         self._static_root = static_root
         self._show_index = show_index
         self._chunk_size = chunk_size
         self._allow_links = allow_links
+        self._cache_min = cache_min
 
     def get(self, req):
         headers = {}
@@ -18,37 +20,14 @@ class StaticSiteModule:
         data = b''
         filename = self._static_root + req.url
         if os.path.isfile(filename):
-            filesize = os.path.getsize(filename)
-            if filesize < self._chunk_size:
-                with open(filename, 'rb') as f:
-                    data = f.read()
-                    code = 200
-            else:
-                offset = 0
-                size = self._chunk_size
-                if 'range' in req.headers:
-                    if not req.headers['range'].startswith('bytes='):
-                        raise AeonResponse('Unsupportable range type "%s"' % req.headers['range'], code=400)
-
-                    if ',' in req.headers['range']:
-                        raise AeonResponse('Multirange not supported', code=400)
-
-                    r = [i.strip() for i in req.headers['range'][6:].split('-')]
-                    if len(r) != 2 or any((not i.isdigit() for i in r)):
-                        raise AeonResponse('Invalid range header', code=400)
-                    offset = int(r[0])
-                    size = int(r[1]) - offset
-                    if size > self._chunk_size:
-                        size = self._chunk_size
-
-                with open(filename) as f:
-                    f.seek(offset)
-                    data = f.read(size if size > 0 else 0)
-                    code = 206
+            return StaticResponse(
+                file=filename,
+                cache_min=self._cache_min,
+                max_response_size=self._chunk_size,
+            )
         elif self._show_index and os.path.isdir(filename):
             urls = []
             url = req.url.rstrip('/')
-            print(filename)
             for _fn in os.listdir(filename):
                 fn = ''.join([filename, _fn])
                 if os.path.isdir(fn):
@@ -83,7 +62,7 @@ class StaticSiteModule:
                     {
                         ''.join(
                             [
-                                f'<div>{item[type]}: <a href="{item[url]}">{item[name]}</a></div>'
+                                f'<div>{item["type"]}: <a href="{item["url"]}">{item["name"]}</a></div>'
                                 for item in urls
                             ]
                         )
@@ -92,6 +71,7 @@ class StaticSiteModule:
             </html>
             '''
             code = 200
+            headers['Cache-Control'] = f'max-age={self._cache_min}'
 
         return Response(
             data=data,

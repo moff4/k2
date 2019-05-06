@@ -20,19 +20,19 @@ class TimeEventCounter(AbstractStat):
             self._t = _t
 
     def add(self):
-        _t = int(time.time)
-        self._value[_t] = self._value.get(_t) + 1
+        _t = int(time.time())
+        self._value[_t] = self._value.get(_t, 0) + 1
         self._check(_t)
 
     def reset(self):
-        self._t = int(time.time)
+        self._t = int(time.time())
         self._value = {}
 
     def update(self, limit):
         self._limit = limit
 
     def export(self):
-        self._check(int(time.time))
+        self._check(int(time.time()))
         return self._value
 
     def get_type(self):

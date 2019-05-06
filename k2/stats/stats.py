@@ -64,7 +64,7 @@ async def add(key, *a, **b):
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
     Collection[key]['obj'].add(*a, **b)
-    await __callback(event='add', key=key, *a, **b)
+    await __callback('add', key, *a, **b)
 
 
 async def reset(key=None):
@@ -72,11 +72,11 @@ async def reset(key=None):
         if key not in Collection:
             raise KeyError(f'stat "{key}" does not exists')
         Collection[key]['obj'].reset()
-        await __callback(event='reset', key=key)
+        await __callback('reset', key)
     else:
         for key in Collection:
             Collection[key]['obj'].reset()
-            await __callback(event='reset', key=key)
+            await __callback('reset', key)
 
 
 def export_one(key):

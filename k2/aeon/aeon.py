@@ -33,7 +33,7 @@ class Aeon(AbstractAeon):
     postware = []
 
     def __init__(self, *a, **b):
-        super().__init__(self, *a, **b)
+        super().__init__(**b)
         for i in range(1, 6):
             stats.new(key=f'aeon-{i}xx', type='time_event_counter', description=f'HTTP status code {i}xx')
         stats.new(key='request_log', type='time_events', description='log for each request')
@@ -42,7 +42,7 @@ class Aeon(AbstractAeon):
 
     def chooser(self, req):
         """
-            find enpoint
+            find endpoint
             return (endpoint dict, params)
             or (None, None)
         """
@@ -80,7 +80,7 @@ class Aeon(AbstractAeon):
                         if (
                             module is None
                         ) or (
-                            req.method not in enpoint.methods
+                            req.method not in endpoint.methods
                         ) or (
                             not hasattr(module, req.method.lower())
                         ):
@@ -109,7 +109,6 @@ class Aeon(AbstractAeon):
                     logging.exception(f'[{addr[0]}:{addr[1]}] ex: {e}')
                     resp = Response(data=e.data, code=e.code, headers=e.headers)
                 except RuntimeError as e:
-                    logging.warning(e)
                     req.keep_alive = False
                 except Exception as e:
                     logging.exception(f'[{addr[0]}:{addr[1]}] ex: {e}')

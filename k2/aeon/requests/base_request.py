@@ -142,7 +142,7 @@ class Request:
             logging.warning(f'[{self.ip}:{self.port}] pipe error: {e}')
             self.keep_alive = False
         except Exception as e:
-            logging.error(f'[{self.ip}:{self.port}] send response: {e}')
+            logging.exception(f'[{self.ip}:{self.port}] send response: {e}')
             self.keep_alive = False
 
     def is_local(self):

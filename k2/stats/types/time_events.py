@@ -21,7 +21,7 @@ class TimeEvents(AbstractStat):
             self._t = _t
 
     def add(self, value):
-        _t = int(time.time)
+        _t = int(time.time())
         self._value.append(
             {
                 'timestamp': _t,
@@ -31,14 +31,14 @@ class TimeEvents(AbstractStat):
         self._check(_t)
 
     def reset(self):
-        self._t = int(time.time)
+        self._t = int(time.time())
         self._value = []
 
     def update(self, limit):
         self._limit = limit
 
     def export(self):
-        self._check(int(time.time))
+        self._check(int(time.time()))
         return self._value
 
     def get_type(self):
