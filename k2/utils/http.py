@@ -81,13 +81,13 @@ HTTP_CODE_MSG = {
     526: 'Invalid SSL Certificate',
 }
 
-HTTP_METHODS = [
+HTTP_METHODS = {
     'GET',
     'POST',
     'HEAD',
     'PUT',
     'DELETE',
-]
+}
 
 HTTP_VERSIONS = [
     'HTTP/1.1',

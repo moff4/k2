@@ -30,7 +30,7 @@ server.add_site_module(
     key='/',
     target=type(
         'cgi',
-        (,),
+        (),
         {
             'get': lambda req: k2.aeon.Response(code=200, data='requested url: %s' % req.url)
         }

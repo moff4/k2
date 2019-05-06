@@ -12,6 +12,7 @@ from k2.utils.http import (
     MAX_HEADER_COUNT,
     MAX_HEADER_LEN,
     MAX_URI_LENGTH,
+    HTTP_METHODS,
     readln,
 )
 
@@ -26,7 +27,7 @@ async def parse_data(reader, **kwargs):
         'max_header_count': MAX_HEADER_COUNT,
         'max_data_length': MAX_DATA_LEN,
         'max_uri_length': MAX_URI_LENGTH,
-        'allowed_methods': {'GET', 'HEAD', 'POST', 'PUT', 'DELETE'},
+        'allowed_methods': HTTP_METHODS,
         'allowed_http_version': {'HTTP/1.1'},
         'site_dir': './var/',
     }

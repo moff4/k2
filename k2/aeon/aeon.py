@@ -11,6 +11,7 @@ from k2.aeon.ws import WSHandler
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     NOT_FOUND,
+    HTTP_METHODS,
     SMTH_HAPPENED,
 )
 
@@ -64,7 +65,13 @@ class Aeon(AbstractAeon):
                     endpoint, args = self.chooser(req)
                     if endpoint.type == 'cgi':
                         module = endpoint.target
-                        if module is None or not hasattr(module, req.method.lower()):
+                        if (
+                            module is None
+                        ) or (
+                            req.method not in enpoint.methods
+                        ) or (
+                            not hasattr(module, req.method.lower())
+                        ):
                             resp = Response(data=NOT_FOUND, code=404)
                         else:
                             for ware in self.middleware:
@@ -107,11 +114,23 @@ class Aeon(AbstractAeon):
         except Exception as e:
             logging.error(f'[{addr[0]}:{addr[1]}] handler error: {e}')
 
-    def add_site_module(self, key, target):
+    def add_site_module(self, key, target, methods=None):
+        if methods is None:
+            cgi_methods = HTTP_METHODS
+        else:
+            cgi_methods = set()
+            for i in methods:
+                i = i.upper()
+                if i in HTTP_METHODS:
+                    cgi_methods.add(i)
+                else:
+                    raise ValueError(f'Unallowed HTTP-method "{i}"')
+
         self._endpoints[key] = AutoCFG(
             {
                 'target': target,
-                'type': 'cgi'
+                'type': 'cgi',
+                'methods': cgi_methods,
             }
         )
 
