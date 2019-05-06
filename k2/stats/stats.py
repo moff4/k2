@@ -4,6 +4,7 @@ from k2.stats.types import (
     Single,
     Counter,
     Average,
+    TimeEvents,
     TimeAverage,
     EventCounter,
     TimeEventCounter
@@ -18,12 +19,13 @@ stat-name => {
 Collection = {}
 
 TypeMap = {
-    'time_event_counter': TimeEventCounter,
-    'event_counter': EventCounter,
     'counter': Counter,
     'single': Single,
     'average': Average,
+    'time_events': TimeEvents,
     'time_average': TimeAverage,
+    'event_counter': EventCounter,
+    'time_event_counter': TimeEventCounter,
 }
 
 
