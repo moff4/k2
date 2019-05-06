@@ -3,6 +3,7 @@
 __all__ = [
     '.aeon',
     '.stats',
+    '.logger',
     '.planner',
     '.tokenazer',
 ]
