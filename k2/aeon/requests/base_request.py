@@ -7,6 +7,7 @@ from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     is_local_ip
 )
+import k2.stats.stats as stats
 
 
 class Request:
@@ -126,17 +127,22 @@ class Request:
         try:
             res = resp.export()
             self._writer.write(res)
+
             f, args = '[%s:%s] %s %s %s', (self.ip, self.port, resp.code, self.url, self.args)
             if self.cfg.request_header in self._headers:
                 f = ''.join(['(%s)', f])
                 args = (self._headers[self.cfg.request_header], *args)
+
             logging.info(f, *args)
+
+            stats.add(key=f'{resp.code // 100}xx')
+
             await self._writer.drain()
         except (BrokenPipeError, IOError) as e:
-            logging.warning('[%s:%s] pipe error: %s', self.ip, self.port, e)
+            logging.warning(f'[{self.ip}:{self.port}] pipe error: {e}')
             self.keep_alive = False
         except Exception as e:
-            logging.error('[%s:%s] send response: %s', self.ip, self.port, e)
+            logging.error(f'[{self.ip}:{self.port}] send response: {e}')
             self.keep_alive = False
 
     def is_local(self):
