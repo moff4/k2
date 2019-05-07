@@ -25,7 +25,7 @@ def apply(obj, scheme, key=None):
     """
         obj - some object
         scheme - jschema
-        key is name of top-level object (or None) ; (for logging)
+        key is name of top-level object (or None) ; (for log)
         scheme ::= {
           type     : type of this object : "list/dict/str/int/float"
           value    : scheme - need for list/dict - pointer to scheme for child
@@ -41,9 +41,8 @@ def apply(obj, scheme, key=None):
     _key = key if key is not None else 'Top-level'
     extra = '' if key is None else ''.join(['for ', key])
     if not isinstance(scheme, dict):
-        raise ValueError(
-            f'scheme must be dict {extra}'
-        )
+        raise ValueError(f'scheme must be dict {extra}')
+
     if 'pre_call' in scheme:
         obj = scheme['pre_call'](obj)
 
