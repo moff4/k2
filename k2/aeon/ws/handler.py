@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import logging
 from k2.aeon.ws.base import BaseWSHandler
 
 
@@ -14,35 +13,35 @@ class WSHandler(BaseWSHandler):
             Will be called just after ws handshake
             Example: for cookie check / adding ws to pool
         """
-        logging.debug('validation done!')
+        self.req.logger.debug('validation done!')
 
     async def on_request(self):
         """
             Will be called before ws handshake
             Example: for Origin check
         """
-        logging.debug('got request!')
+        self.req.logger.debug('got request!')
 
     async def on_end(self):
         """
             Will be called after ws been closed
             Example: for deleteing from ws from pool
         """
-        logging.debug('connection is over!')
+        self.req.logger.debug('connection is over!')
 
     async def handle_incoming_msg(self, message):
         """
             Will be called on new incoming text message
             For example: Origin check
         """
-        logging.debug('new message: %s' % message)
+        self.req.logger.debug(f'new message: {message}')
 
     async def handle_incoming_bin(self, message):
         """
             Will be called on new incoming binary message
             For example: Origin check
         """
-        logging.debug('new message: %s' % str(message))
+        self.req.logger.debug(f'new message: {str(message)}')
 
     def close(self):
         """

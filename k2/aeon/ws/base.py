@@ -6,8 +6,8 @@ import errno
 from base64 import b64encode
 from hashlib import sha1
 from socket import error as SocketError
-import logging
 
+import k2.logger as logger
 from k2.aeon.responses import Response
 from k2.utils.autocfg import AutoCFG
 from k2.utils.ws import (
@@ -104,7 +104,7 @@ class BaseWSHandler:
                 elif self.valid_client:
                     await self.read_next_message()
         except Exception as e:
-            logging.exception('Loop: %s', e)
+            self.req.logger.exception(f'Loop: {e}')
         finally:
             await self.finish()
 
@@ -206,7 +206,7 @@ class BaseWSHandler:
             self.wfile.write(header + payload)
             await self._writer.drain()
         except Exception as e:
-            logging.debug('[%s:%s] send-text: %s' % (self.req.ip, self.req.port, e))
+            self.req.logger.debug(f'[{self.req.ip}:{self.req.port}] send-text: {e}')
             self.keep_alive = False
 
     async def handshake(self):

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-import logging
-
+import k2.logger as logger
 from k2.aeon.parser import parse_data
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
@@ -28,7 +27,6 @@ class Request:
             allowed_http_version - set/list of allowed HTTP version (default: {'HTTP/1.1'})
     """
 
-    name = 'request'
     defaults = {
         'request_header': 'x-request-id',
         'believe_x_from_y': False,
@@ -41,6 +39,7 @@ class Request:
     def __init__(self, addr, reader, writer, **kwargs):
         self._initialized = False
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
+        self.logger = logger.new_channel(f'{addr[0]}:{addr[1]}', parent='aeon')
         self._kwargs = kwargs
         self._addr = addr
         self._reader = reader
@@ -128,21 +127,21 @@ class Request:
             res = resp.export()
             self._writer.write(res)
 
-            f, args = '[%s:%s] %s %s %s', (self.ip, self.port, resp.code, self.url, self.args)
+            f, args = '{} {} {}', (resp.code, self.url, self.args)
             if self.cfg.request_header in self._headers:
-                f = ''.join(['(%s)', f])
+                f = ''.join(['({}) ', f])
                 args = (self._headers[self.cfg.request_header], *args)
 
-            logging.info(f, *args)
+            await self.logger.info(f, *args)
 
             await stats.add(key=f'aeon-{resp.code // 100}xx')
 
             await self._writer.drain()
         except (BrokenPipeError, IOError) as e:
-            logging.warning(f'[{self.ip}:{self.port}] pipe error: {e}')
+            await self.logger.warning(f'pipe error: {e}')
             self.keep_alive = False
         except Exception as e:
-            logging.exception(f'[{self.ip}:{self.port}] send response: {e}')
+            await self.logger.exception(f'send response: {e}')
             self.keep_alive = False
 
     def is_local(self):
