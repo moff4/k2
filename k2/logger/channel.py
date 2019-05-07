@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import re
 import sys
 import time
 import asyncio
@@ -13,7 +13,7 @@ class Channel:
         'key': None,
         'timeout': 3600,
         'limit': 1000,
-        'autosave': True,
+        'autosave': '--no-log' in sys.argv,
         'log_file': 'log.txt',
         'callback': None,
         'stdout': '--stdout' in sys.argv,
@@ -25,11 +25,14 @@ class Channel:
     def __init__(self, **kwargs):
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
         if self.cfg.key is not None:
-            if f'--stdout={self.cfg.key}' in sys.argv:
+            if any((re.match(f'--stdout=.*{self.cfg.key}.*', x) is not None for x in sys.argv)):
                 self.cfg.stdout = True
-            if f'--debug={self.cfg.key}' in sys.argv:
+            if any((re.match(f'--debug=.*{self.cfg.key}.*', x) is not None for x in sys.argv)):
                 self.cfg.log_levels.add('debug')
+            if any((re.match(f'--no-log=.*{self.cfg.key}.*', x) is not None for x in sys.argv)):
+                self.cfg.autosave = False
 
+        self.parents = set()
         self._logs = []
         self._t = 0
 
@@ -41,8 +44,21 @@ class Channel:
             while self._logs and self._logs[0]['timestamp'] > _t:
                 self._logs.pop(0)
 
-    async def log(self, msg, level, args, kwargs):
-        if level not in self.cdf.log_levels:
+    def update(self, **kwargs):
+        self.cfg.update_fields(kwargs)
+
+    def add_parent(self, parent, inherite_rights={'stdout', 'debug', 'autosave'}):
+        self.parents.add(
+            {
+                'parent': parent,
+                'inherite_rights': inherite_rights,
+            }
+        )
+        for i in inherite_rights:
+            self.cfg[i] |= parent.cfg[i]
+
+    async def log(self, msg, level, args, kwargs, from_child=False):
+        if level not in self.cfg.log_levels:
             return
 
         timestamp = time.time()
@@ -60,12 +76,12 @@ class Channel:
                 'log_msg': log_msg,
             }
         )
-
-        if self.cfg.stdout:
-            print(log_msg)
-        if self.cfg.autosave:
-            with open(self.cfg.log_file, 'a') as f:
-                f.write(''.join([log_msg, '\n']))
+        if not from_child:
+            if self.cfg.stdout:
+                print(log_msg)
+            if self.cfg.autosave:
+                with open(self.cfg.log_file, 'a') as f:
+                    f.write(''.join([log_msg, '\n']))
         if self.cfg.callback is not None:
             params = {
                 'key': self.cfg.key,
@@ -79,9 +95,22 @@ class Channel:
             elif callable(self.cfg.callback):
                 self.cfg.callback(**params)
 
-    async def exception(self, ex, level='error', *args, **kwargs):
+        await asyncio.gather(
+            *[
+                parent['parent'].log(
+                    msg=msg,
+                    level=level,
+                    args=args,
+                    kwargs=kwargs,
+                    from_child=True,
+                )
+                for parent in self.parents
+            ]
+        )
+
+    async def exception(self, msg, level='error', *args, **kwargs):
         await self.log(
-            msg=traceback.format_exception(sys.exc_info()),
+            msg=''.join([msg, '\n'] + traceback.format_exception(*sys.exc_info())),
             level=level,
             args=args,
             kwargs=kwargs,
