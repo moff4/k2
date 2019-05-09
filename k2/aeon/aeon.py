@@ -95,11 +95,7 @@ class Aeon(AbstractAeon):
                                 resp = handler(req, **args)
                     elif endpoint.type == 'ws':
                         if req.headers.get('upgrade', '').lower() == 'websocket':
-                            try:
-                                await stats.add('ws_connections')
-                                await endpoint.target(req, **args).mainloop()
-                            finally:
-                                await stats.add('ws_connections', -1)
+                            await req.upgrade_to_ws(endpoint.target, **args)
                             keep_alive = False
                         else:
                             resp = Response(data=NOT_FOUND, code=404)
