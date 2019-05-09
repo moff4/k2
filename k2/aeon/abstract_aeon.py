@@ -2,8 +2,8 @@
 import sys
 import asyncio
 import socket
-import logging
 
+import k2.logger as logger
 from k2.utils.autocfg import AutoCFG
 
 
@@ -35,6 +35,7 @@ class AbstractAeon:
             self.cfg.loop = asyncio.get_event_loop()
         self._task = None
         self._server = None
+        self._logger = logger.new_channel('aeon')
 
     async def client_connected_cb(self, reader, writer):
         try:
@@ -43,11 +44,11 @@ class AbstractAeon:
                 data = await reader.read(100)
                 message = data.decode()
                 addr = writer.get_extra_info('peername')
-                logging.debug(f'recived [{addr[0]}:{addr[1]}] {message.rstrip()}')
+                await self._logger.debug(f'recived [{addr[0]}:{addr[1]}] {message.rstrip()}')
                 writer.write(data)
                 await writer.drain()
         except Exception as e:
-            logging.error('Error: %s' % e)
+            await self._logger.error('Error: %s' % e)
         finally:
             writer.close()
 
@@ -78,13 +79,13 @@ class AbstractAeon:
         return self._task
 
     def run(self):
-        self._server = self.cfg.loop.run_until_complete(self.task)
         try:
-            logging.info('start server on port: %s' % self.cfg.port)
+            if any((x in sys.argv for x in {'--stdout', '--stdout=aeon'})):
+                print(f'server started on {self.cfg.port}')
+            self._server = self.cfg.loop.run_until_complete(self.task)
             self.cfg.loop.run_forever()
         except KeyboardInterrupt:
             pass
         finally:
             self._server.close()
             self.cfg.loop.run_until_complete(self._server.wait_closed())
-            self.cfg.loop.close()

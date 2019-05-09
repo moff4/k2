@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import re
 import asyncio
-import logging
 
 from k2.aeon.abstract_aeon import AbstractAeon
 from k2.aeon.requests import Request
@@ -61,16 +60,16 @@ class Aeon(AbstractAeon):
 
         keep_alive = True
         addr = writer.get_extra_info('peername')
-        logging.debug(f'[{addr[0]}:{addr[0]}] new connection')
+        await self._logger.debug(f'[{addr[0]}:{addr[0]}] new connection')
         await stats.add('connections')
         try:
             while keep_alive:
                 resp = None
+                req = Request(addr, reader, writer)
                 try:
-                    req = Request(addr, reader, writer)
-                    logging.debug(f'[{addr[0]}:{addr[1]}] gonna data read')
+                    await req.logger.debug(f'gonna data read')
                     await req.read()
-                    logging.debug(f'[{addr[0]}:{addr[1]}] data read')
+                    await req.logger.debug(f'data read')
 
                     await stats.add(key='request_log', value=f'{req.method} {req.url} {req.args}')
 
@@ -102,16 +101,16 @@ class Aeon(AbstractAeon):
                     else:
                         resp = Response(data=NOT_FOUND, code=404)
                 except AeonResponse as e:
-                    logging.exception(f'[{addr[0]}:{addr[1]}] ex: {e}')
+                    await req.logger.exception(f'[{addr[0]}:{addr[1]}] ex: {e}')
                     resp = Response(data=e.data, code=e.code, headers=e.headers)
                 except RuntimeError as e:
                     req.keep_alive = False
                 except Exception as e:
-                    logging.exception(f'[{addr[0]}:{addr[1]}] ex: {e}')
+                    await req.logger.exception(f'[{addr[0]}:{addr[1]}] ex: {e}')
                     req.keep_alive = False
                     resp = Response(data=SMTH_HAPPENED, code=500)
 
-                logging.debug(f'[{addr[0]}:{addr[1]}] gonna send response')
+                await req.logger.debug(f'[{addr[0]}:{addr[1]}] gonna send response')
                 if resp is not None:
                     await req.send(resp)
 
@@ -123,7 +122,7 @@ class Aeon(AbstractAeon):
 
                 keep_alive = req.headers.get('connection', 'keep-alive') != 'close' and req.keep_alive
         except Exception as e:
-            logging.error(f'[{addr[0]}:{addr[1]}] handler error: {e}')
+            await self._logger.error(f'[{addr[0]}:{addr[1]}] handler error: {e}')
         finally:
             await stats.add('connections', -1)
 

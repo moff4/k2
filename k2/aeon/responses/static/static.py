@@ -24,13 +24,13 @@ class StaticResponse(Response):
         'max_response_size': (2 ** 18),
     }
 
-    def __init__(self, file, request=None, **kwargs):
+    async def __init__(self, file, request=None, **kwargs):
         super().__init__()
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
         self.content_mod = None
         self.vars = {}
         self.req = request
-        self.load_static_file(file)
+        await self.load_static_file(file)
 
     def usefull_inserts(self, az):
         """
@@ -47,7 +47,7 @@ class StaticResponse(Response):
 
     def run_scripts(self):
         if self.content_mod == TEXT and self._data:
-            sr = ScriptRunner(text=self._data)
+            sr = ScriptRunner(text=self._data, logger=self.req.logger)
             if sr.run(args=self.vars):
                 self._data = sr.export()
             else:
@@ -55,12 +55,13 @@ class StaticResponse(Response):
                 self.code = 500
         return self
 
-    def load_static_file(self, filename):
+    async def load_static_file(self, filename):
         """
             load static file
             return True in case of success
         """
         if os.path.isfile(filename):
+            await self.req.logger.debug(f'send file "{filename}"')
             size = os.path.getsize(filename)
             if size <= self.cfg.max_response_size:
                 with open(filename, 'rb') as f:
@@ -98,6 +99,7 @@ class StaticResponse(Response):
             self.code = _code
             return True
         else:
+            await self.req.logger.debug(f'file not found "{filename}"')
             self._data = NOT_FOUND
             self.add_headers(CONTENT_HTML)
             self.code = 404

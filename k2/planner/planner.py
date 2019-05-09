@@ -2,6 +2,7 @@
 import asyncio
 import time
 
+import k2.logger as logger
 from k2.planner.task import Task
 from k2.utils.autocfg import AutoCFG
 
@@ -24,6 +25,7 @@ class Planner:
             self.cfg.loop = asyncio.get_event_loop()
         self._tasks = {}
         self._running_tasks = []
+        self._logger = logger.new_channel('planner')
 
     def check_shedule(self):
         """
@@ -45,6 +47,7 @@ class Planner:
             timeout = self.cfg.timeout
             eps = 0.1
             if task is not None:
+                self._logger.debug('next task "{}" in {:.2f} sec', task.name, task.delay)
                 if abs(time.time() - task.next_run) < eps:
                     self._running_tasks.append(
                         self.cfg.loop.create_task(
@@ -59,7 +62,7 @@ class Planner:
     def add_task(self, key, target, **kwargs):
         if key in self._tasks:
             raise ValueError(f'key "{key}" already in use')
-        self._tasks[key] = Task(target=target, **kwargs)
+        self._tasks[key] = Task(target=target, key=key, **kwargs)
 
     def run(self):
         self.task = self.cfg.loop.create_task(

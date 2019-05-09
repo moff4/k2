@@ -8,17 +8,30 @@ from .channel import Channel
 Channels = {}
 
 
-def new_channel(key, **kwargs):
+def new_channel(key, parent=None, inherite_rights={'stdout', 'debug', 'autosave'}, **kwargs):
     Channels[key] = Channel(key=key, **kwargs)
+    if parent is not None:
+        Channels[key].add_parent(
+            parent=parent if isinstance(parent, Channel) else Channels[parent],
+            inherite_rights=inherite_rights
+        )
+    return Channels[key]
+
+
+def update_channel(key, **kwargs):
+    if key in Channels:
+        return Channels[key].update(**kwargs)
+    else:
+        raise KeyError(f'channel "{key}" not exists')
 
 
 def delete_channel(key):
     Channels.pop(key, None)
 
 
-async def exception(key, ex, level='error', *args, **kwargs):
+async def exception(key, msg, level='error', *args, **kwargs):
     await Channels[key].exception(
-        ex=ex,
+        msg=msg,
         level=level,
         *args,
         **kwargs,
