@@ -74,7 +74,9 @@ class Aeon(AbstractAeon):
                     await stats.add(key='request_log', value=f'{req.method} {req.url} {req.args}')
 
                     endpoint, args = self.chooser(req)
-                    if endpoint.type == 'cgi':
+                    if not endpoint:
+                        resp = Response(data=NOT_FOUND, code=404)
+                    elif endpoint.type == 'cgi':
                         module = endpoint.target
                         if (
                             module is None
@@ -126,7 +128,7 @@ class Aeon(AbstractAeon):
 
                 keep_alive = req.headers.get('connection', 'keep-alive') != 'close' and req.keep_alive
         except Exception as e:
-            await self._logger.error(f'[{addr[0]}:{addr[1]}] handler error: {e}')
+            await self._logger.exception(f'[{addr[0]}:{addr[1]}] handler error: {e}')
         finally:
             await stats.add('connections', -1)
 
