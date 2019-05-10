@@ -32,7 +32,7 @@ class Channel:
             if any((re.match(f'--no-log=.*{self.cfg.key}.*', x) is not None for x in sys.argv)):
                 self.cfg.autosave = False
 
-        self.parents = set()
+        self.parents = []
         self._logs = []
         self._t = 0
 
@@ -47,15 +47,17 @@ class Channel:
     def update(self, **kwargs):
         self.cfg.update_fields(kwargs)
 
-    def add_parent(self, parent, inherite_rights={'stdout', 'debug', 'autosave'}):
-        self.parents.add(
+    def add_parent(self, parent, inherite_rights={'stdout', 'log_levels', 'autosave'}):
+        self.parents.append(
             {
                 'parent': parent,
                 'inherite_rights': inherite_rights,
             }
         )
-        for i in inherite_rights:
+        for i in {'stdout', 'autosave'}:
             self.cfg[i] |= parent.cfg[i]
+        if 'log_levels' in inherite_rights:
+            self.cfg.log_levels.update(self.parent.cfg.log_levels)
 
     async def log(self, msg, level, args, kwargs, from_child=False):
         if level not in self.cfg.log_levels:
