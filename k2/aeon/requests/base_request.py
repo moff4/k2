@@ -2,6 +2,7 @@
 
 import k2.logger as logger
 from k2.aeon.parser import parse_data
+from k2.aeon.ws import WSHandler
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     is_local_ip
@@ -143,6 +144,19 @@ class Request:
         except Exception as e:
             await self.logger.exception(f'send response: {e}')
             self.keep_alive = False
+
+    async def upgrade_to_ws(self, target, **kwargs):
+        if not issubclass(target, WSHandler) and not isinstance(target, WSHandler):
+            raise TypeError(f'target ({target}) must be subclass / instance of WSHandler')
+        try:
+            await stats.add('ws_connections')
+            await (
+                target
+                if isinstance(target, WSHandler) else
+                target(self, **kwargs)
+            ).mainloop()
+        finally:
+            await stats.add('ws_connections', -1)
 
     def is_local(self):
         """
