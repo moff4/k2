@@ -56,6 +56,7 @@ class Request:
         self._http_version = None
         self._headers = {}
         self._data = b''
+        self._ssl = kwargs.get('ssl', False)
 
     async def read(self):
         data = await parse_data(self._reader, **self._kwargs)
@@ -76,7 +77,6 @@ class Request:
             ) else
             self._source_ip
         )
-        self._ssl = False
         self._send = False
         self._callback = {
             'before_send': [],
@@ -118,10 +118,6 @@ class Request:
     @property
     def ssl(self):
         return self._ssl
-
-    @ssl.setter
-    def ssl(self, value):
-        self._ssl = value
 
     async def send(self, resp):
         try:
