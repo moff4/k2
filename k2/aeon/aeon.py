@@ -34,6 +34,7 @@ class Aeon(AbstractAeon):
     def __init__(self, *a, **b):
         super().__init__(**b)
         self._ssl = b.get('ssl') is not None
+        self._request_prop = b.get('request', {})
         for i in range(1, 6):
             stats.new(key=f'aeon-{i}xx', type='time_event_counter', description=f'HTTP status code {i}xx')
         stats.new(key='request_log', type='time_events', description='log for each request')
@@ -66,7 +67,7 @@ class Aeon(AbstractAeon):
         try:
             while keep_alive:
                 resp = None
-                req = Request(addr, reader, writer, ssl=self._ssl)
+                req = Request(addr, reader, writer, ssl=self._ssl, **self._request_prop)
                 try:
                     await req.logger.debug(f'gonna data read')
                     await req.read()

@@ -32,6 +32,7 @@ class Request:
         'request_header': 'x-request-id',
         'believe_x_from_y': False,
         'cache_min': 120,
+        'protocol': {},
     }
 
     # objects must be asyncio.corutines
@@ -59,7 +60,7 @@ class Request:
         self._ssl = kwargs.get('ssl', False)
 
     async def read(self):
-        data = await parse_data(self._reader, **self._kwargs)
+        data = await parse_data(self._reader, **self._kwargs.protocol)
 
         self._url = data.url
         self._args = data.args

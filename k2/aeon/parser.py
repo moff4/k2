@@ -29,7 +29,6 @@ async def parse_data(reader, **kwargs):
         'max_uri_length': MAX_URI_LENGTH,
         'allowed_methods': HTTP_METHODS,
         'allowed_http_version': {'HTTP/1.1'},
-        'site_dir': './var/',
     }
     cfg = AutoCFG(__defaults).update_fields(kwargs)
     req = AutoCFG(
