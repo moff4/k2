@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 
 
 class AutoCFG(dict):
@@ -54,3 +55,27 @@ class AutoCFG(dict):
             self.update({k: d[k] for k in d if k not in self})
         self.update({k: b[k] for k in b if k not in self})
         return self
+
+
+class CacheDict(dict):
+    def __init__(self, timeout, func):
+        self._timeout = timeout
+        self._func = func
+        super().__init__()
+
+    def __getitem__(self, key):
+        if (
+            key not in self
+        ) or (
+            not isinstance(super().__getitem__(key), dict)
+        ) or (
+            super().__getitem__(key).get('time', 0) < time.time()
+        ):
+            super().__setitem__(
+                key,
+                {
+                    'time': time.time() + self._timeout,
+                    'data': self._func(key),
+                },
+            )
+        return super().__getitem__(key)['data']
