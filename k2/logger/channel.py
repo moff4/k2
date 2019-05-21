@@ -13,7 +13,7 @@ class Channel:
         'key': None,
         'timeout': 3600,
         'limit': 1000,
-        'autosave': '--no-log' in sys.argv,
+        'autosave': '--no-log' not in sys.argv,
         'log_file': 'log.txt',
         'callback': None,
         'stdout': '--stdout' in sys.argv,

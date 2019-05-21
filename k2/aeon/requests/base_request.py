@@ -42,7 +42,6 @@ class Request:
         self._initialized = False
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
         self.logger = logger.new_channel(f'{addr[0]}:{addr[1]}', parent='aeon')
-        self._kwargs = kwargs
         self._addr = addr
         self._reader = reader
         self._writer = writer
@@ -60,7 +59,7 @@ class Request:
         self._ssl = kwargs.get('ssl', False)
 
     async def read(self):
-        data = await parse_data(self._reader, **self._kwargs.protocol)
+        data = await parse_data(self._reader, **self.cfg.protocol)
 
         self._url = data.url
         self._args = data.args

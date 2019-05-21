@@ -102,7 +102,7 @@ class Coder:
         """
             list
         """
-        st = [] if just else st = self._gen_type(LIST)
+        st = [] if just else self._gen_type(LIST)
         st.extend(
             [
                 i
