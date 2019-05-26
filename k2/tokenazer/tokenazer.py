@@ -71,7 +71,6 @@ class Tokenazer:
                 data=cookie,
                 mask=self.cfg.mask_0
             )
-            print('Tokenazer: %s' % data)
             return jschema.apply(
                 obj=art.unmarshal(
                     data=cfb_decrypt(
