@@ -124,7 +124,7 @@ class Request:
             res = resp.export()
             self._writer.write(res)
 
-            f, args = '{} {} {}', (resp.code, self.url, self.args)
+            f, args = '{} {} {} {}', (self._method, resp.code, self.url, self.args)
             if self.cfg.request_header in self._headers:
                 f = ''.join(['({}) ', f])
                 args = (self._headers[self.cfg.request_header], *args)
