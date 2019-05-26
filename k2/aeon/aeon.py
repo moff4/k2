@@ -105,8 +105,7 @@ class Aeon(AbstractAeon):
                     else:
                         resp = Response(data=NOT_FOUND, code=404)
                 except AeonResponse as e:
-                    await req.logger.exception(f'ex: {e}')
-                    resp = Response(data=e.data, code=e.code, headers=e.headers)
+                    resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
                 except RuntimeError as e:
                     req.keep_alive = False
                 except Exception as e:

@@ -132,7 +132,7 @@ class Parser:
         return az
 
     def _type(self, unallowed_types=()):
-        map = {
+        convert_map = {
             INT_POS: self._get_int,
             INT_NEG: lambda: self._get_int() * (-1),
             FLOAT_POS: self._get_float,
@@ -148,8 +148,8 @@ class Parser:
         t = self._get() & 0x0F
         if t in unallowed_types:
             raise ValueError(f'Unexpected element type of {t}')
-        if t in self.convert_map:
-            return self.convert_map[t]
+        if t in convert_map:
+            return convert_map[t]()
         else:
             raise ValueError(f'Unexpected type number: {t}')
 

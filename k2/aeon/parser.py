@@ -109,5 +109,5 @@ async def parse_data(reader, **kwargs):
         _len = int(req.headers['content-length'])
         if _len >= cfg.max_data_length:
             raise AeonResponse('Too much data', code=413)
-        req.data = reader.recv(_len)
+        req.data = await reader.read(_len)
     return req

@@ -29,10 +29,9 @@ def delete_channel(key):
     Channels.pop(key, None)
 
 
-async def exception(key, msg, level='error', *args, **kwargs):
+async def exception(key, msg, *args, **kwargs):
     await Channels[key].exception(
         msg=msg,
-        level=level,
         *args,
         **kwargs,
     )

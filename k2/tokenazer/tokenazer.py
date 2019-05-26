@@ -5,6 +5,7 @@ import binascii
 from os import urandom
 from pygost.gost28147 import cfb_decrypt, cfb_encrypt
 
+from k2.logger import new_channel
 from k2.utils.autocfg import AutoCFG
 from k2.utils import jschema
 from k2.utils import art
@@ -58,8 +59,9 @@ class Tokenazer:
         """
         self.cfg = AutoCFG(self.__defaults).update_fields(kwargs)
         self.secret = secret
+        self.logger = new_channel('tokenazer')
 
-    def __decode_cookie(self, cookie, mask=None):
+    async def __decode_cookie(self, cookie, mask=None):
         """
             return decoded cookie as dict
             or None in case of error
@@ -67,9 +69,9 @@ class Tokenazer:
         try:
             data = art.unmarshal(
                 data=cookie,
-                mask=self.cfg.masks_0
+                mask=self.cfg.mask_0
             )
-
+            print('Tokenazer: %s' % data)
             return jschema.apply(
                 obj=art.unmarshal(
                     data=cfb_decrypt(
@@ -80,15 +82,13 @@ class Tokenazer:
                     mask=(
                         (
                             bytes(
-                                [
-                                    mask[i] ^ self.cfg.masks_1[i % len(self.cfg.masks_1)]
-                                    for i in range(len(mask))
-                                ]
+                                mask[i] ^ self.cfg.mask_1[i % len(self.cfg.mask_1)]
+                                for i in range(len(mask))
                             )
                             if mask else
-                            self.cfg.masks_1
+                            self.cfg.mask_1
                         )
-                        if self.cfg.masks_1 else
+                        if self.cfg.mask_1 else
                         mask
                     ),
                 ),
@@ -96,8 +96,7 @@ class Tokenazer:
                 key='cookie'
             )
         except Exception as e:
-            self.Warning('decode cookie: {}', e)
-            self.Trace('decode cookie: ')
+            await self.logger.exception('decode cookie: {}', e, level='warning')
             return None
 
 # ==========================================================================
@@ -122,17 +121,15 @@ class Tokenazer:
         params = {
             'expires': 'exp',
         }
-        if 'mask' in kwargs and self.cfg.masks_1:
+        if 'mask' in kwargs and self.cfg.mask_1:
             mask = bytes(
-                [
-                    kwargs['mask'][i] ^ self.cfg.masks_1[i % len(self.cfg.masks_1)]
-                    for i in range(len(kwargs['mask']))
-                ]
+                kwargs['mask'][i] ^ self.cfg.mask_1[i % len(self.cfg.mask_1)]
+                for i in range(len(kwargs['mask']))
             )
         elif 'mask' in kwargs:
             mask = kwargs['mask']
-        elif self.cfg.masks_1:
-            mask = self.cfg.masks_1
+        elif self.cfg.mask_1:
+            mask = self.cfg.mask_1
         else:
             mask = None
         data.update({params[i]: kwargs[i] for i in params if i in kwargs})
@@ -151,17 +148,17 @@ class Tokenazer:
                     'd': data,
                     'i': iv
                 },
-                mask=self.cfg.masks_0,
+                mask=self.cfg.mask_0,
                 random=True
             )
         ).decode()
 
-    def valid_cookie(self, cookie, mask=None):
+    async def valid_cookie(self, cookie, mask=None):
         """
             return decoded cookie as dict if cookie is valid
             or None if cookie is not valid
         """
-        cookie = self.__decode_cookie(
+        cookie = await self.__decode_cookie(
             binascii.unhexlify(
                 cookie
             ),

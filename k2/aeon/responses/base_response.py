@@ -14,7 +14,7 @@ class Response:
         basic class for response
     """
 
-    def __init__(self, data=None, headers=None, code=200):
+    def __init__(self, data=None, headers=None, code=200, cookies=None):
         if data is not None and not isinstance(data, (str, bytes)):
             raise TypeError('data must be str or bytes')
 
@@ -32,6 +32,9 @@ class Response:
         self._code = code
         # list of Set-Cookie header values: ['uid=123; HttpOnly', 'session_id=abc; Secure']
         self._cookies = []
+        if cookies:
+            for ck in cookies:
+                self.add_cookie(**ck)
         self._http_version = 'HTTP/1.1'
 
     def _extra_prepare_data(self):

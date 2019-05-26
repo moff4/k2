@@ -56,7 +56,9 @@ class Coder:
             st = [0x80]
             sign = False
         if not just:
-            st.insert(0, self._gen_type(INT_NEG if sign else INT_POS))
+            tmp = self._gen_type(INT_NEG if sign else INT_POS)
+            tmp.extend(st)
+            st = tmp
         return st
 
     def _float(self, data, just=False):
@@ -130,14 +132,13 @@ class Coder:
         """
         st = [] if just else self._gen_type(MAP)
         st.extend(
-            [
-                j
-                for key in data
-                for j in (
-                    self._type(data=key, unallowed_types=(dict, list, tuple)),
-                    self._type(data=data[key])
-                )
-            ]
+            k
+            for key in data
+            for j in (
+                self._type(data=key, unallowed_types=(dict, list, tuple)),
+                self._type(data=data[key])
+            )
+            for k in j
         )
         st.extend(self._none())
         return st
@@ -169,8 +170,11 @@ class Coder:
             raise TypeError(f'Unexpected type: {type(data)} for {str(data)}')
 
     def magic(self):
-        self.result = bytes(self._type(self.data))
-        self.result = self._int(len(self.result), just=True) + self.result
+        tmp = self._type(self.data)
+        self.result = self._int(len(tmp), just=True)
+        self.result.extend(tmp)
+        self.result = bytes(self.result)
+        return self.result
 
     def export(self):
         return self.result

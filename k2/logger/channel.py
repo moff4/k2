@@ -110,10 +110,10 @@ class Channel:
             ]
         )
 
-    async def exception(self, msg, level='error', *args, **kwargs):
+    async def exception(self, msg, *args, **kwargs):
         await self.log(
             msg=''.join([msg, '\n'] + traceback.format_exception(*sys.exc_info())),
-            level=level,
+            level=kwargs.get('level', 'error'),
             args=args,
             kwargs=kwargs,
         )
