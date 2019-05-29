@@ -109,7 +109,7 @@ class Aeon(AbstractAeon):
                 except RuntimeError as e:
                     req.keep_alive = False
                 except Exception as e:
-                    await req.logger.exception(f'ex: {e}')
+                    await req.logger.exception('ex: {}', e)
                     req.keep_alive = False
                     resp = Response(data=SMTH_HAPPENED, code=500)
 
@@ -125,7 +125,7 @@ class Aeon(AbstractAeon):
 
                 keep_alive = req.headers.get('connection', 'keep-alive') != 'close' and req.keep_alive
         except Exception as e:
-            await self._logger.exception(f'handler error: {e}')
+            await self._logger.exception('handler error: {}', e)
         finally:
             await stats.add('connections', -1)
 

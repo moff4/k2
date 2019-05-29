@@ -142,8 +142,12 @@ class Request:
             self.keep_alive = False
 
     async def upgrade_to_ws(self, target, **kwargs):
-        if not issubclass(target, WSHandler) and not isinstance(target, WSHandler):
-            raise TypeError(f'target ({target}) must be subclass / instance of WSHandler')
+        if isinstance(target, type) and not issubclass(target, WSHandler):
+            raise TypeError('target ({}) must be subclass of WSHandler', target)
+
+        if not isinstance(target, type) and not isinstance(target, WSHandler):
+            raise TypeError('target ({}) must be instance of WSHandler', target)
+
         try:
             await stats.add('ws_connections')
             await (

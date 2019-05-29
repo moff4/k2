@@ -13,41 +13,41 @@ class WSHandler(BaseWSHandler):
             Will be called just after ws handshake
             Example: for cookie check / adding ws to pool
         """
-        self.req.logger.debug('validation done!')
+        await self.req.logger.debug('validation done!')
 
     async def on_request(self):
         """
             Will be called before ws handshake
             Example: for Origin check
         """
-        self.req.logger.debug('got request!')
+        await self.req.logger.debug('got request!')
 
     async def on_end(self):
         """
             Will be called after ws been closed
             Example: for deleteing from ws from pool
         """
-        self.req.logger.debug('connection is over!')
+        await self.req.logger.debug('connection is over!')
 
     async def handle_incoming_msg(self, message):
         """
             Will be called on new incoming text message
             For example: Origin check
         """
-        self.req.logger.debug(f'new message: {message}')
+        await self.req.logger.debug(f'new message: {message}')
 
     async def handle_incoming_bin(self, message):
         """
             Will be called on new incoming binary message
             For example: Origin check
         """
-        self.req.logger.debug(f'new message: {str(message)}')
+        await self.req.logger.debug(f'new message: {str(message)}')
 
-    def close(self):
+    async def close(self):
         """
             Will be called when server is shutting down
             You should send message to close connection / reconnect
             if you are ready to close connection, call super().close()
             otherwise server will wait for client close connection
         """
-        super().close()
+        await super().close()
