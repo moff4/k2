@@ -45,9 +45,6 @@ class WSHandler(BaseWSHandler):
 
     async def close(self):
         """
-            Will be called when server is shutting down
-            You should send message to close connection / reconnect
-            if you are ready to close connection, call super().close()
-            otherwise server will wait for client close connection
+            on close connection
         """
         await super().close()

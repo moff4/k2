@@ -99,7 +99,8 @@ class Aeon(AbstractAeon):
                     elif endpoint.type == 'ws':
                         if req.headers.get('upgrade', '').lower() == 'websocket':
                             await req.upgrade_to_ws(endpoint.target, **args)
-                            keep_alive = False
+                            req.keep_alive = False
+                            resp = None
                         else:
                             resp = Response(data=NOT_FOUND, code=404)
                     else:
@@ -109,12 +110,12 @@ class Aeon(AbstractAeon):
                 except RuntimeError as e:
                     req.keep_alive = False
                 except Exception as e:
-                    await req.logger.exception('ex: {}', e)
+                    await req.logger.exception('aeon-loop ex: {}', e)
                     req.keep_alive = False
                     resp = Response(data=SMTH_HAPPENED, code=500)
 
-                await req.logger.debug('gonna send response')
                 if resp is not None:
+                    await req.logger.debug('gonna send response')
                     await req.send(resp)
 
                 for ware in req.postware:

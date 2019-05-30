@@ -10,7 +10,6 @@ from k2.aeon.responses import Response
 from k2.utils.autocfg import AutoCFG
 from k2.utils.ws import (
     encode_to_UTF8,
-    try_decode_UTF8,
 )
 
 '''
@@ -104,7 +103,7 @@ class BaseWSHandler:
         except Exception as e:
             await self.req.logger.exception(f'Loop: {e}')
         finally:
-            await self.finish()
+            await self.close()
 
     async def read_next_message(self):
         try:
@@ -126,6 +125,7 @@ class BaseWSHandler:
         if opcode == self.OPCODE_CLOSE_CONN:
             # Client asked to close connection.
             self.keep_alive = False
+            await self.close()
             return
         if not masked:
             # Client must always be masked
@@ -151,7 +151,12 @@ class BaseWSHandler:
             message_byte ^= masks[len(message_bytes) % 4]
             message_bytes.append(message_byte)
         handler = self.handler_map[opcode]
-        await self.__call(handler, message_bytes.decode('utf8'))
+        await self.__call(
+            handler,
+            message_bytes.decode('utf8')
+            if opcode == self.OPCODE_TEXT else
+            message_bytes
+        )
 
     async def send_message(self, message):
         await self.send_text(message, self.OPCODE_TEXT)
@@ -162,6 +167,13 @@ class BaseWSHandler:
     async def send_pong(self, message):
         await self.send_text(message, self.OPCODE_PONG)
 
+    async def close_conn(self):
+        if self.keep_alive:
+            self.valid = False
+            await self.send_text(b'ABCD', self.OPCODE_CLOSE_CONN)
+            self.wfile.close()
+            await self.wfile.wait_closed()
+
     async def send_text(self, message, opcode=None):
         """
             Important: Fragmented(=continuation) messages are not supported since
@@ -171,19 +183,16 @@ class BaseWSHandler:
             opcode = self.OPCODE_TEXT
 
         # Validate message
-        if isinstance(message, bytes):
-            message = try_decode_UTF8(message)  # this is slower but ensures we have UTF-8
-            if not message:
-                # 'Can\'t send message, message is not valid UTF-8'
-                return False
+        if isinstance(message, (bytes, bytearray)):
+            message = bytes(message)
         elif isinstance(message, str):
-            pass
+            message = encode_to_UTF8(message)
         else:
             # 'Can\'t send message, message has to be a string or bytes. Given type is %s' % type(message)
             return False
 
         header = bytearray()
-        payload = encode_to_UTF8(message)
+        payload = message
         payload_length = len(payload)
 
         if payload_length <= 125:
@@ -204,7 +213,7 @@ class BaseWSHandler:
             self.wfile.write(header + payload)
             await self.wfile.drain()
         except Exception as e:
-            await self.req.logger.debug(f'[{self.req.ip}:{self.req.port}] send-text: {e}')
+            await self.req.logger.debug(f'[{self.req.ip}:{self.req.port}] send: {e}')
             self.keep_alive = False
 
     async def handshake(self):
@@ -241,6 +250,7 @@ class BaseWSHandler:
         return response_key.decode('ASCII')
 
     async def finish(self):
+        await self.close_conn()
         await self.__call(self.on_end)
         self.keep_alive = False
         self.alive = False
