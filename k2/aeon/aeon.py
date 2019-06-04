@@ -33,7 +33,6 @@ class Aeon(AbstractAeon):
 
     def __init__(self, *a, **b):
         super().__init__(**b)
-        self._ssl = b.get('ssl') is not None
         self._request_prop = b.get('request', {})
         for i in range(1, 6):
             stats.new(key=f'aeon-{i}xx', type='time_event_counter', description=f'HTTP status code {i}xx')
@@ -66,8 +65,19 @@ class Aeon(AbstractAeon):
         await stats.add('connections')
         try:
             while keep_alive:
+                try:
+                    _ssl = writer.get_extra_info('socket').getsockname()[1] == self.cfg.https_port
+                except Exception as e:
+                    await self._logger.error('get_extra_info(\'socket\'): {}', e)
+                    _ssl = False
                 resp = None
-                req = Request(addr, reader, writer, ssl=self._ssl, **self._request_prop)
+                req = Request(
+                    addr=addr,
+                    reader=reader,
+                    writer=writer,
+                    ssl=_ssl,
+                    **self._request_prop,
+                )
                 try:
                     await req.logger.debug(f'gonna data read')
                     await req.read()

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import ssl
 import asyncio
 import socket
 
@@ -16,12 +17,15 @@ class AbstractAeon:
     __defaults = {
         'host': '',
         'port': 8888,
+        'use_ssl': False,
+        'https_port': 8889,
         'loop': None,
         'family': socket.AF_INET,
         'flags': socket.AI_PASSIVE,
-        'sock': None,
         'backlog': 100,
         'ssl': None,
+        'cacert': None,
+        'certs': None,  # or dict: host => {certfile, keyfile, keypassword}
         'reuse_address': None,
         'reuse_port': None,
         'ssl_handshake_timeout': None,
@@ -33,9 +37,37 @@ class AbstractAeon:
         self.cfg = AutoCFG({k: kwargs.get(k, self.__defaults[k]) for k in self.__defaults})
         if self.cfg.loop is None:
             self.cfg.loop = asyncio.get_event_loop()
+        self._contexts = {}
+        if self.cfg.ssl is None and self.cfg.certs:
+            for host in self.cfg.certs:
+                context = ssl.create_default_context(
+                    purpose=ssl.Purpose.CLIENT_AUTH,
+                    cafile=self.cfg.ca_cert,
+                )
+                context.load_cert_chain(
+                    certfile=self.cfg.certs[host]['certfile'],
+                    keyfile=self.cfg.certs[host]['keyfile'],
+                    password=self.cfg.certs[host].get('keypassword', None),
+                )
+                self._contexts[host] = context
+            self.cfg.ssl = ssl.create_default_context(
+                purpose=ssl.Purpose.CLIENT_AUTH,
+                cafile=self.cfg.ca_cert,
+            )
+            self.cfg.ssl.set_servername_callback(self.servername_callback)
         self._task = None
         self._server = None
         self._logger = logger.new_channel('aeon')
+
+    def servername_callback(self, sock, req_hostname, cb_context, as_callback=True):
+        """
+            ssl context callback
+        """
+        context = self._contexts.get(req_hostname)
+        if context is None:
+            context = self._contexts.get('*')
+        if context is not None:
+            sock.context = context
 
     async def client_connected_cb(self, reader, writer):
         try:
@@ -55,27 +87,50 @@ class AbstractAeon:
     @property
     def task(self):
         if self._task is None:
-            args = {
+            tasks = []
+            http_args = {
                 'client_connected_cb': self.client_connected_cb,
                 'host': self.cfg.host,
                 'port': self.cfg.port,
                 'loop': self.cfg.loop,
                 'family': self.cfg.family,
                 'flags': self.cfg.flags,
-                'sock': self.cfg.sock,
                 'backlog': self.cfg.backlog,
-                'ssl': self.cfg.ssl,
+                'ssl': None,
                 'reuse_address': self.cfg.reuse_address,
                 'reuse_port': self.cfg.reuse_port,
             }
             if sys.version_info[0] >= 3 and sys.version_info[1] >= 7:
-                args.update(
+                http_args.update(
                     {
                         'ssl_handshake_timeout': self.cfg.ssl_handshake_timeout,
                         'start_serving': self.cfg.start_serving,
                     }
                 )
-            self._task = asyncio.start_server(**args)
+            tasks.append(asyncio.start_server(**http_args))
+
+            if self.cfg.use_ssl:
+                https_args = {
+                    'client_connected_cb': self.client_connected_cb,
+                    'host': self.cfg.host,
+                    'port': self.cfg.https_port,
+                    'loop': self.cfg.loop,
+                    'family': self.cfg.family,
+                    'flags': self.cfg.flags,
+                    'backlog': self.cfg.backlog,
+                    'ssl': self.cfg.ssl,
+                    'reuse_address': self.cfg.reuse_address,
+                    'reuse_port': self.cfg.reuse_port,
+                }
+                if sys.version_info[0] >= 3 and sys.version_info[1] >= 7:
+                    https_args.update(
+                        {
+                            'ssl_handshake_timeout': self.cfg.ssl_handshake_timeout,
+                            'start_serving': self.cfg.start_serving,
+                        }
+                    )
+                tasks.append(asyncio.start_server(**https_args))
+            self._task = asyncio.gather(*tasks)
         return self._task
 
     def run(self):
