@@ -79,7 +79,7 @@ class Aeon(AbstractAeon):
                     **self._request_prop,
                 )
                 try:
-                    await req.logger.debug(f'gonna data read')
+                    await req.logger.debug(f'gonna read data')
                     await req.read()
                     await req.logger.debug(f'data read')
 
