@@ -85,7 +85,7 @@ class AbstractAeon:
             writer.close()
 
     @property
-    def task(self):
+    def tasks(self):
         if self._task is None:
             tasks = []
             http_args = {
@@ -130,19 +130,30 @@ class AbstractAeon:
                         }
                     )
                 tasks.append(asyncio.start_server(**https_args))
-            self._task = asyncio.gather(*tasks) if len(tasks) > 1 else tasks[0]
+            self._task = tasks
         return self._task
 
     def run(self):
         ports = f'{self.cfg.port}, {self.cfg.https_port}' if self.cfg.use_ssl else self.cfg.port
+        tasks = []
         try:
             if any((x in sys.argv for x in {'--stdout', '--stdout=aeon'})):
                 print(f'server started on {ports}')
 
-            self.cfg.loop.run_until_complete(self.task)
+            tasks = [
+                (
+                    asyncio.create_task
+                    if sys.version_info[0] >= 3 and sys.version_info[1] >= 7 else
+                    asyncio.ensure_future
+                )
+                (task)
+                for task in self.tasks
+            ]
             self.cfg.loop.run_forever()
         except KeyboardInterrupt:
             pass
         finally:
+            for task in tasks:
+                task.cancel()
             if any((x in sys.argv for x in {'--stdout', '--stdout=aeon'})):
                 print(f'server stopped on {ports}')

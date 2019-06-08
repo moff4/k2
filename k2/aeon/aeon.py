@@ -59,9 +59,11 @@ class Aeon(AbstractAeon):
             else:
                 ware(*a, **b)
 
+        _log_extras = '' if writer.get_extra_info('socket').getsockname()[1] != self.cfg.https_port else '[ssl] '
+
         keep_alive = True
         addr = writer.get_extra_info('peername')
-        await self._logger.debug(f'new connection from {addr[0]}:{addr[1]}')
+        await self._logger.debug(_log_extras + f'new connection from {addr[0]}:{addr[1]}')
         await stats.add('connections')
         try:
             while keep_alive:
