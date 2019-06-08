@@ -24,7 +24,7 @@ class AbstractAeon:
         'flags': socket.AI_PASSIVE,
         'backlog': 100,
         'ssl': None,
-        'cacert': None,
+        'ca_cert': None,
         'certs': None,  # or dict: host => {certfile, keyfile, keypassword}
         'reuse_address': None,
         'reuse_port': None,
