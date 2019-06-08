@@ -141,12 +141,7 @@ class AbstractAeon:
                 print(f'server started on {ports}')
 
             tasks = [
-                (
-                    asyncio.create_task
-                    if sys.version_info[0] >= 3 and sys.version_info[1] >= 7 else
-                    asyncio.ensure_future
-                )
-                (task)
+                asyncio.ensure_future(task)
                 for task in self.tasks
             ]
             self.cfg.loop.run_forever()
