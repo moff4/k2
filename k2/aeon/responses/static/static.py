@@ -24,13 +24,13 @@ class StaticResponse(Response):
         'max_response_size': (2 ** 18),
     }
 
-    async def __init__(self, file, request=None, **kwargs):
+    def __init__(self, request, **kwargs):
         super().__init__()
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
         self.content_mod = None
         self.vars = {}
         self.req = request
-        await self.load_static_file(file)
+        self._data = ''
 
     def usefull_inserts(self, az):
         """
@@ -45,15 +45,15 @@ class StaticResponse(Response):
                     self._data = self._data[:j] + i[1] + self._data[j + len(i[0]):]
         return self
 
-    def run_scripts(self):
+    async def _run_scripts(self):
         if self.content_mod == TEXT and self._data:
             sr = ScriptRunner(text=self._data, logger=self.req.logger)
-            if sr.run(args=self.vars):
+            if await sr.run(args=self.vars):
                 self._data = sr.export()
             else:
                 self._data = SMTH_HAPPENED
                 self.code = 500
-        return self
+        return self._data
 
     async def load_static_file(self, filename):
         """
@@ -90,7 +90,7 @@ class StaticResponse(Response):
             self.content_mod = (
                 TEXT
                 if next(
-                    (headers[i] for i in headers)
+                    headers[i] for i in headers
                 ).startswith('text') else
                 BIN
             )
@@ -109,5 +109,5 @@ class StaticResponse(Response):
         self.code = 307 + permanent
         self.add_headers(Location=url)
 
-    def _extra_prepare_data(self):
-        return self.run_scripts()._data
+    async def _extra_prepare_data(self):
+        return await self._run_scripts()

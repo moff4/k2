@@ -121,7 +121,7 @@ class Request:
 
     async def send(self, resp):
         try:
-            res = resp.export()
+            res = await resp.export()
             self._writer.write(res)
 
             f, args = '{} {} {} {}', (self._method, resp.code, self.url, self.args)

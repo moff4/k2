@@ -37,7 +37,7 @@ class Response:
                 self.add_cookie(**ck)
         self._http_version = 'HTTP/1.1'
 
-    def _extra_prepare_data(self):
+    async def _extra_prepare_data(self):
         return self.data
 
     @property
@@ -91,8 +91,8 @@ class Response:
             )
         )
 
-    def export(self) -> str:
-        data = self._extra_prepare_data()
+    async def export(self) -> str:
+        data = await self._extra_prepare_data()
         data = data.encode() if isinstance(data, str) else data
         headers = self._headers.update_missing(STANDART_HEADERS)
         headers.update({'Content-Length': len(data)})
