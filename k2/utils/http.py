@@ -121,6 +121,43 @@ STANDART_HEADERS = {
     'Accept-Ranges': 'bytes',
 }
 
+CONTENT_TYPE_MAP = {
+    # file extension -> MIME Type
+    'html': 'text/html',
+    'css': 'text/css',
+    'txt': 'text/txt',
+    'csv': 'text/csv',
+    'xml': 'text/xml',
+    'php': 'text/plain',
+    'rtf': 'text/rtf',
+    'md': 'text/markdown',
+    'js': 'text/javascript',
+    'json': 'application/json',
+    'jar': 'application/java-archive',
+    'zip': 'application/zip',
+    '7z': 'application/x-7z-compressed',
+    'jpg': 'image/jpg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'tiff': 'image/tiff',
+    'mkv': 'video/webm',
+    'avi': 'video/x-msvideo',
+    'mp4': 'video/mp4',
+    'ogg': 'video/ogg',
+    'svg': 'image/svg+xml',
+    'ttf': 'application/x-font-ttf',
+    'otf': 'application/x-font-opentype',
+    'woff': 'application/font-woff',
+    'woff2': 'application/font-woff2',
+    'eot': 'application/vnd.ms-fontobject',
+    'sfnt': 'application/font-sfnt',
+    'bin': 'application/octet-stream',
+    'doc': 'application/msword',
+    'ppt': 'application/vnd.ms-powerpoint',
+    'pdf': 'application/pdf',
+}
+DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
 MAX_DATA_LEN = 8 * (2 ** 20)
 MAX_HEADER_COUNT = 64
@@ -145,37 +182,20 @@ async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
     return bytes(st)
 
 
+def mime_type(st):
+    st = st.split('.')[-1]
+    if st in CONTENT_TYPE_MAP:
+        return CONTENT_TYPE_MAP[st]
+    else:
+        return DEFAULT_CONTENT_TYPE
+
+
 def content_type(st):
     """
         get filename or url as str
         return content-type header as dict
     """
-    st = st.split('.')[-1]
-    if st in {'html', 'css', 'txt', 'csv', 'xml', 'js', 'json', 'php', 'md'}:
-        type_1 = 'text'
-        if st == 'js':
-            type_2 = 'javascript'
-        elif st == 'md':
-            type_2 = 'markdown'
-        elif st == 'html':
-            type_2 = st
-        else:
-            type_2 = st
-
-    elif st in {'jpg', 'jpeg', 'png', 'gif', 'tiff'}:
-        type_1 = 'image'
-        type_2 = st
-
-    elif st in {'mkv', 'avi', 'mp4'}:
-        type_1 = 'video'
-        if st in {'mp4', 'avi'}:
-            type_2 = st
-        else:
-            type_2 = 'webm'
-    else:
-        type_1 = 'text'
-        type_2 = 'plain'
-    return {'Content-type': f'{type_1}/{type_2}'}
+    return {'Content-type': f'{mime_type(st)}'}
 
 
 def is_local_ip(addr) -> bool:
