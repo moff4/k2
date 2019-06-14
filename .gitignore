@@ -1,4 +1,8 @@
 __pucache__/
+build/
+dist/
+*.egg-info/
+*.egg
 *.pyc
 *.tmp
 *.txt
