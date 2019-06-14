@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys
 import asyncio
 import struct
 import errno
@@ -8,9 +9,7 @@ from socket import error as SocketError
 
 from k2.aeon.responses import Response
 from k2.utils.autocfg import AutoCFG
-from k2.utils.ws import (
-    encode_to_UTF8,
-)
+from k2.utils.ws import encode_to_UTF8
 
 '''
 +-+-+-+-+-------+-+-------------+-------------------------------+
@@ -172,7 +171,8 @@ class BaseWSHandler:
             self.valid = False
             await self.send_text(b'ABCD', self.OPCODE_CLOSE_CONN)
             self.wfile.close()
-            await self.wfile.wait_closed()
+            if sys.version_info[0] >= 3 and sys.version_info[1] >= 7:
+                await self.wfile.wait_closed()
 
     async def send_text(self, message, opcode=None):
         """
