@@ -119,7 +119,7 @@ class Aeon(AbstractAeon):
                         resp = Response(data=NOT_FOUND, code=404)
                 except AeonResponse as e:
                     resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
-                except RuntimeError as e:
+                except (RuntimeError, ConnectionResetError):
                     req.keep_alive = False
                 except Exception as e:
                     await req.logger.exception('aeon-loop ex: {}', e)

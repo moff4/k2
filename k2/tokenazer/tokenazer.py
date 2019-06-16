@@ -157,17 +157,20 @@ class Tokenazer:
             return decoded cookie as dict if cookie is valid
             or None if cookie is not valid
         """
-        cookie = await self.__decode_cookie(
-            binascii.unhexlify(
-                cookie
-            ),
-            mask,
-        )
-        if (
-            cookie is None
-        ) or (
-            cookie['exp'] is not None and (cookie['create'] + cookie['exp']) < time.time()
-        ):
+        try:
+            cookie = await self.__decode_cookie(
+                binascii.unhexlify(
+                    cookie
+                ),
+                mask,
+            )
+            if (
+                cookie is None
+            ) or (
+                cookie['exp'] is not None and (cookie['create'] + cookie['exp']) < time.time()
+            ):
+                return None
+            else:
+                return cookie
+        except binascii.Error:
             return None
-        else:
-            return cookie
