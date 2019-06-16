@@ -8,6 +8,7 @@ from .responses import (
 )
 from .sitemodules import StaticSiteModule
 from .ws import WSHandler
+from .client import ClientSession
 
 
 __all__ = [
@@ -15,6 +16,7 @@ __all__ = [
     'Response',
     'WSHandler',
     'AeonResponse',
+    'ClientSession',
     'StaticResponse',
     'StaticSiteModule',
 ]

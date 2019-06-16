@@ -163,6 +163,7 @@ MAX_DATA_LEN = 8 * (2 ** 20)
 MAX_HEADER_COUNT = 64
 MAX_HEADER_LEN = 2 ** 10
 MAX_URI_LENGTH = 256
+MAX_STATUS_LENGTH = 256
 
 
 async def readln(reader, max_len=None, ignore_zeros=False, exception=None):

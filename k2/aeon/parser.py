@@ -6,6 +6,7 @@ from urllib.parse import (
 )
 
 from k2.aeon.exceptions import AeonResponse
+from k2.aeon.responses import Response
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     MAX_DATA_LEN,
@@ -13,6 +14,7 @@ from k2.utils.http import (
     MAX_HEADER_LEN,
     MAX_URI_LENGTH,
     HTTP_METHODS,
+    MAX_STATUS_LENGTH,
     readln,
 )
 
@@ -111,3 +113,42 @@ async def parse_data(reader, **kwargs):
             raise AeonResponse('Too much data', code=413)
         req.data = await reader.read(_len)
     return req
+
+
+async def parse_response_data(reader, **kwargs):
+    """
+        take io stream and cfg and parse HTTP headers
+        return dict of attributes/headers/url/args
+    """
+    __defaults = {
+        'max_header_length': MAX_HEADER_LEN,
+        'max_header_count': MAX_HEADER_COUNT,
+        'max_data_length': MAX_DATA_LEN,
+        'max_status_length': MAX_STATUS_LENGTH,
+        'allowed_methods': HTTP_METHODS,
+        'expected_http_version': {'HTTP/1.1'},
+    }
+    cfg = AutoCFG(__defaults).update_fields(kwargs)
+    version, code, *_ = (await readln(reader, max_len=cfg.max_status_length)).decode().split(' ')
+    headers = {}
+    for i in range(cfg.max_header_count):
+        st = await readln(readln, max_len=cfg.max_header_length)
+        if not st:
+            break
+        key, *value = st.split(':')
+        value = b':'.join(value).strip()
+        headers[key.decode().lower()] = value.decode()
+
+    st = await readln(readln, max_len=cfg.max_header_length)
+    if st:
+        raise ValueError('Too many headers')
+
+    if 'content-length' in headers:
+        data = await reader.read(int(headers['content-length']))
+
+    return Response(
+        data=data,
+        headers=headers,
+        code=code,
+        version=version
+    )
