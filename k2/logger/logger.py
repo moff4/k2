@@ -86,3 +86,5 @@ def export(key):
         return Channels[key].export()
     else:
         raise KeyError(f'channel "{key}" not exists')
+
+BaseLogger = new_channel('base_logger')

@@ -11,6 +11,7 @@ from .logger import (
     get_channel,
     clear,
     export,
+    BaseLogger,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     'get_channel',
     'clear',
     'export',
+    'BaseLogger',
 ]
