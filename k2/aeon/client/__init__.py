@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from .client import ClientSession
+from .client import BaseClientSession
 
 __all__ = [
-    'ClientSession',
+    'BaseClientSession',
 ]

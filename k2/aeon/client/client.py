@@ -30,7 +30,7 @@ ClientLogger = new_channel(
     parent=get_channel('aeon') or get_channel('base_logger'),
 )
 
-class ClientSession:
+class BaseClientSession:
     def __init__(self, host, port, ssl=False, limit=None, loop=None, **kwargs):
         self._conn_args = {
             'host': host,
