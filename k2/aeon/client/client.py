@@ -16,7 +16,7 @@ from k2.utils.autocfg import AutoCFG
 from k2.aeon.parser import parse_response_data
 
 
-class ClientSession:
+class BaseClientSession:
     def __init__(self, host, port, ssl=False, limit=None, loop=None, **kwargs):
         self._conn_args = {
             'host': host,
