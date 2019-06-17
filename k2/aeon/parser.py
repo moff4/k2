@@ -40,7 +40,7 @@ async def parse_data(reader, **kwargs):
             'args': {},
             'method': b'',
             'http_version': b'',
-            'headers': {},
+            'headers': AutoCFG(key_modifier=lambda x: x.lower()),
             'data': b'',
         }
     )
@@ -99,11 +99,17 @@ async def parse_data(reader, **kwargs):
 
         st = st.decode('utf-8').split(':')
         key = st[0].lower()
-        if key in req.headers:
-            raise AeonResponse(f'Got 2 same headers ({key})', code=400)
-        elif len(req.headers) >= cfg.max_header_count:
+        if len(req.headers) >= cfg.max_header_count:
             raise AeonResponse('Too many headers', code=400)
-        req.headers[key] = ':'.join(st[1:]).strip()
+        if key in req.headers:
+            req.headers[key] = ', '.join(
+                [
+                    req.headers[key],
+                    unquote(':'.join(st[1:]).strip()),
+                ]
+            )
+        else:
+            req.headers[key] = unquote(':'.join(st[1:]).strip())
 
     if os.path.normpath(req.url).startswith('..'):
         raise AeonResponse(f'Unallowed req: {req.url}', code=400)
@@ -153,7 +159,9 @@ async def parse_response_data(reader, **kwargs):
     headers = AutoCFG(key_modifier=lambda x: x.lower())
 
     for i in range(cfg.max_header_count):
-        st = unquote(await readln(reader, max_len=cfg.max_header_length)).strip()
+        st = (
+            await readln(reader, max_len=cfg.max_header_length)
+        ).decode().strip()
 
         if not st:
             break
@@ -161,9 +169,9 @@ async def parse_response_data(reader, **kwargs):
         if len(headers) > cfg.max_header_count:
             raise ValueError('Too many headers')
 
-        key, *value = st.split(b':')
-        key = key.decode().lower()
-        value = b':'.join(value).strip()
+        key, *value = st.split(':')
+        key = key.lower()
+        value = unquote(':'.join(value).strip())
         if key in headers:
             headers[key] = ', '.join(
                 [
@@ -172,7 +180,7 @@ async def parse_response_data(reader, **kwargs):
                 ],
             )
         else:
-            headers[key] = value.decode()
+            headers[key] = value
 
     content_length = 2 * bool(st)
 

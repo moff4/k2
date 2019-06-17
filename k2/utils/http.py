@@ -122,44 +122,60 @@ STANDART_HEADERS = {
 }
 
 CONTENT_TYPE_MAP = {
-    # file extension -> MIME Type
-    'html': 'text/html',
-    'css': 'text/css',
-    'txt': 'text/txt',
-    'csv': 'text/csv',
-    'xml': 'text/xml',
-    'php': 'text/plain',
-    'rtf': 'text/rtf',
-    'md': 'text/markdown',
-    'js': 'text/javascript',
-    'json': 'application/json',
-    'jar': 'application/java-archive',
-    'zip': 'application/zip',
-    '7z': 'application/x-7z-compressed',
-    'jpg': 'image/jpg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'gif': 'image/gif',
-    'tiff': 'image/tiff',
-    'mkv': 'video/webm',
-    'avi': 'video/x-msvideo',
-    'mp4': 'video/mp4',
-    'ogg': 'video/ogg',
-    'mp3': 'audio/mp3',
-    'wav': 'audio/wav',
-    'flac': 'audio/flac',
-    'svg': 'image/svg+xml',
-    'ttf': 'application/x-font-ttf',
-    'otf': 'application/x-font-opentype',
-    'woff': 'application/font-woff',
-    'woff2': 'application/font-woff2',
-    'eot': 'application/vnd.ms-fontobject',
-    'sfnt': 'application/font-sfnt',
-    'bin': 'application/octet-stream',
-    'doc': 'application/msword',
-    'ppt': 'application/vnd.ms-powerpoint',
-    'pdf': 'application/pdf',
+    'text': {
+        'html': 'html',
+        'css': 'css',
+        'txt': 'txt',
+        'csv': 'csv',
+        'xml': 'xml',
+        'php': 'plain',
+        'rtf': 'rtf',
+        'md': 'markdown',
+        'js': 'javascript',
+    },
+    'application': {
+        'ogx': 'ogg',
+        'json': 'json',
+        'jar': 'java-archive',
+        'zip': 'zip',
+        '7z': 'x-7z-compressed',
+        'ttf': 'x-font-ttf',
+        'otf': 'x-font-opentype',
+        'woff': 'font-woff',
+        'woff2': 'font-woff2',
+        'eot': 'vnd.ms-fontobject',
+        'sfnt': 'font-sfnt',
+        'bin': 'octet-stream',
+        'doc': 'msword',
+        'ppt': 'vnd.ms-powerpoint',
+        'pdf': 'pdf',
+        'sql': 'sql',
+    },
+    'image': {
+        'jpg': 'jpg',
+        'jpeg': 'jpeg',
+        'png': 'png',
+        'gif': 'gif',
+        'tiff': 'tiff',
+        'svg': 'svg+xml',
+    },
+    'video': {
+        'mkv': 'webm',
+        'avi': 'x-msvideo',
+        'mp4': 'mp4',
+        'ogg': 'ogg',
+        'ogv': 'ogg',
+    },
+    'audio': {
+        'spx': 'ogg',
+        'oga': 'ogg',
+        'opus': 'ogg',
+        'mp3': 'mpeg',
+        'wav': 'wav',
+        'flac': 'flac',
+    },
 }
+
 DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
 MAX_DATA_LEN = 8 * (2 ** 20)
@@ -191,10 +207,10 @@ async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
 
 def mime_type(st):
     st = st.split('.')[-1]
-    if st in CONTENT_TYPE_MAP:
-        return CONTENT_TYPE_MAP[st]
-    else:
-        return DEFAULT_CONTENT_TYPE
+    for type in CONTENT_TYPE_MAP:
+        if st in CONTENT_TYPE_MAP[type]:
+            return '{}/{}'.format(type, CONTENT_TYPE_MAP[type][st])
+    return DEFAULT_CONTENT_TYPE
 
 
 def content_type(st):

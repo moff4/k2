@@ -27,7 +27,7 @@ class Response:
         # response data
         self._data = data or b''
         # dict of headers: {'Content-Type': 'text/html'}
-        self._headers = AutoCFG() if headers is None else AutoCFG(headers)
+        self._headers = AutoCFG(headers or {}, key_modifier=lambda x: x.lower())
         # HTTP status code: 200
         self._code = code
         # dict of dicts for Set-Cookie header:
@@ -65,6 +65,10 @@ class Response:
     @property
     def cookies(self) -> AutoCFG:
         return self._cookies
+
+    @property
+    def headers(self) -> AutoCFG:
+        return self._headers
 
     @data.setter
     def data(self, data):

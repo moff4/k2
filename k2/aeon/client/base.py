@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import asyncio
 from os import urandom
 from binascii import hexlify
 
@@ -8,7 +9,6 @@ try:
 except ImportError:
     from json import dumps
 
-import asyncio
 from urllib.parse import (
     quote,
     quote_from_bytes,
@@ -34,7 +34,9 @@ ClientLogger = new_channel(
 
 class BaseHTTPSession:
 
-    defaults = {}
+    defaults = {
+        'timeout': None,
+    }
 
     def __init__(self, host, port, ssl=False, limit=None, loop=None, **kwargs):
         self._conn_args = {
@@ -81,7 +83,7 @@ class BaseHTTPSession:
         except Exception:
             pass
 
-    async def _request(self, method, url, params=None, data=None, json=None, headers=None):
+    async def _request(self, method, url, params=None, data=None, json=None, headers=None, **kwargs):
         headers = AutoCFG(
             headers or {},
             key_modifier=lambda x: x.lower(),
@@ -111,7 +113,12 @@ class BaseHTTPSession:
                 }
             )
         await self._logger.debug(
-            f'''making request: {method} {self._conn_args['host']}:{self._conn_args['port']}{url} ? {params}'''
+            'making request: {method} {host}:{port}{url} ? {params}',
+            method=method,
+            host=self._conn_args['host'],
+            port=self._conn_args['port'],
+            url=url,
+            params=params,
         )
         self._wr.write(
             b'\r\n'.join(
@@ -150,30 +157,33 @@ class BaseHTTPSession:
             )
         )
         await self._wr.drain()
-        return await self._read_answer()
+        return await asyncio.wait_for(
+            self._read_answer(),
+            timeout=kwargs.get('timeout') or self.cfg.timeout,
+        )
 
     async def _read_answer(self):
         try:
             res = await parse_response_data(self._rd, **self.cfg)
             await self._logger.debug(f'''result: {res.code} {HTTP_CODE_MSG.get(res.code, 'Unknown status')}''')
             return res
-        except ValueError as e:
+        except ValueError:
             await self._logger.exception('Response error:')
 
-    async def get(self, url, params=None, data=None, json=None, headers=None):
-        return await self._request('GET', url=url, params=params, data=data, json=json, headers=headers)
+    async def get(self, url, params=None, data=None, json=None, headers=None, *a, **b):
+        return await self._request('GET', url=url, params=params, data=data, json=json, headers=headers, *a, **b)
 
-    async def post(self, url, params=None, data=None, json=None, headers=None):
-        return await self._request('POST', url=url, params=params, data=data, json=json, headers=headers)
+    async def post(self, url, params=None, data=None, json=None, headers=None, *a, **b):
+        return await self._request('POST', url=url, params=params, data=data, json=json, headers=headers, *a, **b)
 
-    async def head(self, url, params=None, data=None, json=None, headers=None):
-        return await self._request('HEAD', url=url, params=params, data=data, json=json, headers=headers)
+    async def head(self, url, params=None, data=None, json=None, headers=None, *a, **b):
+        return await self._request('HEAD', url=url, params=params, data=data, json=json, headers=headers, *a, **b)
 
-    async def put(self, url, params=None, data=None, json=None, headers=None):
-        return await self._request('PUT', url=url, params=params, data=data, json=json, headers=headers)
+    async def put(self, url, params=None, data=None, json=None, headers=None, *a, **b):
+        return await self._request('PUT', url=url, params=params, data=data, json=json, headers=headers, *a, **b)
 
-    async def delete(self, url, params=None, data=None, json=None, headers=None):
-        return await self._request('DELETE', url=url, params=params, data=data, json=json, headers=headers)
+    async def delete(self, url, params=None, data=None, json=None, headers=None, *a, **b):
+        return await self._request('DELETE', url=url, params=params, data=data, json=json, headers=headers, *a, **b)
 
-    async def options(self, url, params=None, data=None, json=None, headers=None):
-        return await self._request('OPTIONS', url=url, params=params, data=data, json=json, headers=headers)
+    async def options(self, url, params=None, data=None, json=None, headers=None, *a, **b):
+        return await self._request('OPTIONS', url=url, params=params, data=data, json=json, headers=headers, *a, **b)
