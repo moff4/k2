@@ -30,8 +30,9 @@ class Response:
         self._headers = AutoCFG() if headers is None else AutoCFG(headers)
         # HTTP status code: 200
         self._code = code
-        # list of Set-Cookie header values: ['uid=123; HttpOnly', 'session_id=abc; Secure']
-        self._cookies = []
+        # dict of dicts for Set-Cookie header:
+        # {'uid': {'value': '123', 'flags':['HttpOnly'], 'properties': {'Path': '/'}}
+        self._cookies = AutoCFG()
         if cookies:
             for ck in cookies:
                 self.add_cookie(**ck)
@@ -61,6 +62,10 @@ class Response:
     def data(self) -> bytes:
         return self._data
 
+    @property
+    def cookies(self) -> AutoCFG:
+        return self._cookies
+
     @data.setter
     def data(self, data):
         self._data = b'' if data is None else (data.encode() if isinstance(data, str) else data)
@@ -81,18 +86,11 @@ class Response:
             options - boolean properties like HttpOnly and Secure
             kwoptions - kev-value properties like Max-Age and Domain
         """
-        self._cookies.append(
-            '; '.join(
-                [
-                    f'{name}={quote(str(value))}'
-                ] + [
-                    f'{key}={quote(str(val))}'
-                    for key, val in kwoptions.items()
-                ] + list(
-                    options
-                )
-            )
-        )
+        self._cookies[name] = {
+            'value': value,
+            'flags': set(options),
+            'properties': AutoCFG(kwoptions)
+        }
 
     async def export(self) -> str:
         data = await self._extra_prepare_data()
@@ -113,8 +111,19 @@ class Response:
                             headers,
                         )
                     ] + [
-                        f'Set-Cookie: {k}'
-                        for k in self._cookies
+                        'Set-Cookie: {}'.format(
+                            '; '.join(
+                                [
+                                    f'''{name}={quote(self._cookies[name]['value'])}'''
+                                ] + [
+                                    f'{key}={quote(str(val))}'
+                                    for key, val in self._cookies[name]['properties'].items()
+                                ] + list(
+                                    self._cookies[name]['flags']
+                                )
+                            )
+                        )
+                        for name in self._cookies
                     ] + ['\r\n'],
                 ).encode(),
                 data
