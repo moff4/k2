@@ -7,21 +7,27 @@ except ImportError:
 import asyncio
 from urllib.parse import (
     quote,
+    quote_from_bytes,
     urlencode,
 )
 
 
 from k2.utils.autocfg import AutoCFG
-from k2.aeon.parse import parse_response_data
+from k2.aeon.parser import parse_response_data
 
 
 class ClientSession:
     def __init__(self, host, port, ssl=False, limit=None, loop=None, **kwargs):
-        self.host = host
-        self.port = port
-        self.ssl = ssl
-        self.limit = limit
-        self.loop = loop
+        self._conn_args = {
+            'host': host,
+            'port': port,
+            'ssl': ssl,
+        }
+        if limit:
+            self._conn_args['limit'] = limit
+        if loop:
+            self._conn_args['loop'] = loop
+
         self._rd = None
         self._wr = None
         self._kwargs = kwargs
@@ -36,12 +42,8 @@ class ClientSession:
             raise ex_value
 
     async def _open(self):
-        self._rd, self.rw = await asyncio.open_connection(
-            host=self.host,
-            port=self.port,
-            ssl=self.ssl,
-            limit=self.limit,
-            loop=self.loop,
+        self._rd, self._wr = await asyncio.open_connection(
+            **self._conn_args
         )
 
     async def _close(self):
@@ -54,28 +56,54 @@ class ClientSession:
             pass
 
     async def _request(self, method, url, params=None, data=None, json=None, headers=None):
+        headers = AutoCFG(
+            headers or {},
+            key_modifier=lambda x: x.lower(),
+        )
+        headers.update_missing(
+            {
+                'Host': self._conn_args['host'],
+                'User-Agent': 'AeonClient/1.0',
+            }
+        )
         if not data and json:
-            data = dumps(data)
+            data = dumps(json)
+            headers.update_missing(
+                {
+                    'Content-Type': 'application/json',
+                }
+            )
+        elif not data and method in {'POST', 'PUT', 'DELETE'} and params:
+            data = urlencode(params)
+            params = None
         if data:
             if isinstance(data, str):
                 data = data.encode()
-            AutoCFG(headers).update_missing(
+            headers.update_missing(
                 {
                     'Content-Length': len(data),
-                    'User-Agent': 'AeonClient/1.0',
                 }
             )
-        await self._wr.write(
+        self._wr.write(
             b'\r\n'.join(
                 [
-                    '{method} {url} HTTP/1.1'.format(
+                    '{method} {url}{params} HTTP/1.1'.format(
                         method=method,
                         url=url,
-                        params=urlencode(params) if params else '',
+                        params=(
+                            ''.join(
+                                [
+                                    '?',
+                                    urlencode(params),
+                                ]
+                            )
+                            if params else
+                            ''
+                        ),
                     ).encode(),
                 ] + (
                     [
-                        f'{k}: {quote(v)}'.encode()
+                        f'{k}: {quote_from_bytes(v) if isinstance(v, bytes) else quote(str(v))}'.encode()
                         for k, v in headers.items()
                     ] if headers else
                     []
@@ -85,7 +113,10 @@ class ClientSession:
                         data,
                     ]
                     if data else
-                    []
+                    [
+                        b'',
+                        b'',
+                    ]
                 )
             )
         )
@@ -95,20 +126,20 @@ class ClientSession:
     async def _read_answer(self):
         return await parse_response_data(self._rd, **self._kwargs)
 
-    async def get(self, url, params=None, data=None, json=None):
-        return await self._request('GET', url=url, params=params, data=data, json=json)
+    async def get(self, url, params=None, data=None, json=None, headers=None):
+        return await self._request('GET', url=url, params=params, data=data, json=json, headers=headers)
 
-    async def post(self, url, params=None, data=None, json=None):
-        return await self._request('POST', url=url, params=params, data=data, json=json)
+    async def post(self, url, params=None, data=None, json=None, headers=None):
+        return await self._request('POST', url=url, params=params, data=data, json=json, headers=headers)
 
-    async def head(self, url, params=None, data=None, json=None):
-        return await self._request('HEAD', url=url, params=params, data=data, json=json)
+    async def head(self, url, params=None, data=None, json=None, headers=None):
+        return await self._request('HEAD', url=url, params=params, data=data, json=json, headers=headers)
 
-    async def put(self, url, params=None, data=None, json=None):
-        return await self._request('PUT', url=url, params=params, data=data, json=json)
+    async def put(self, url, params=None, data=None, json=None, headers=None):
+        return await self._request('PUT', url=url, params=params, data=data, json=json, headers=headers)
 
-    async def delete(self, url, params=None, data=None, json=None):
-        return await self._request('DELETE', url=url, params=params, data=data, json=json)
+    async def delete(self, url, params=None, data=None, json=None, headers=None):
+        return await self._request('DELETE', url=url, params=params, data=data, json=json, headers=headers)
 
-    async def options(self, url, params=None, data=None, json=None):
-        return await self._request('OPTIONS', url=url, params=params, data=data, json=json)
+    async def options(self, url, params=None, data=None, json=None, headers=None):
+        return await self._request('OPTIONS', url=url, params=params, data=data, json=json, headers=headers)

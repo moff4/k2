@@ -40,6 +40,9 @@ class Response:
     async def _extra_prepare_data(self):
         return self.data
 
+    def __str__(self):
+        return f'<Response: {self._code} {HTTP_CODE_MSG[self._code]}>'
+
     @property
     def code(self):
         return self._code

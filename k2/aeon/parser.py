@@ -129,26 +129,50 @@ async def parse_response_data(reader, **kwargs):
         'expected_http_version': {'HTTP/1.1'},
     }
     cfg = AutoCFG(__defaults).update_fields(kwargs)
-    version, code, *_ = (await readln(reader, max_len=cfg.max_status_length)).decode().split(' ')
-    headers = {}
+    
+    version, code, *_ = (
+        await readln(
+            reader,
+            max_len=cfg.max_status_length,
+            ignore_zeros=True,
+        )
+    ).decode().split(' ')
+
+    if version not in {'HTTP/1.1', 'HTTP/1.0', 'HTTP/0.9'}:
+        raise ValueError(f'unsupported protocol version "{version}"')
+    
+    if not code.isdigit():
+        raise ValueError(f'status code is not integer "{code}"')
+    
+    code = int(code)
+    headers = AutoCFG(key_modifier=lambda x: x.lower())
+
     for i in range(cfg.max_header_count):
-        st = await readln(readln, max_len=cfg.max_header_length)
+        st = (await readln(reader, max_len=cfg.max_header_length)).strip()
+
         if not st:
             break
-        key, *value = st.split(':')
+
+        if len(headers) > cfg.max_header_count:
+            raise ValueError('Too many headers')
+
+        key, *value = st.split(b':')
         value = b':'.join(value).strip()
         headers[key.decode().lower()] = value.decode()
 
-    st = await readln(readln, max_len=cfg.max_header_length)
-    if st:
-        raise ValueError('Too many headers')
-
+    content_length = 2 * bool(st)
+    
     if 'content-length' in headers:
-        data = await reader.read(int(headers['content-length']))
-
+        content_length += int(headers['content-length'])
+        if cfg.max_data_length < content_length:
+            raise ValueError(f'Got unexpectedly much data: {content_length} bytes')
+        data = await reader.read(content_length)
+    else:
+        data = b''
+    
     return Response(
         data=data,
         headers=headers,
         code=code,
-        version=version
+        http_version=version,
     )
