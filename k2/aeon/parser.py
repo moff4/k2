@@ -129,14 +129,18 @@ async def parse_response_data(reader, **kwargs):
         'expected_http_version': {'HTTP/1.1'},
     }
     cfg = AutoCFG(__defaults).update_fields(kwargs)
-    
-    version, code, *_ = (
+    st = (
         await readln(
             reader,
             max_len=cfg.max_status_length,
             ignore_zeros=True,
         )
-    ).decode().split(' ')
+    ).decode()
+
+    if not st or not st.startswith('HTTP/'):
+        raise ValueError('Invalid protocol')
+
+    version, code, *_ = st.split(' ')
 
     if version not in {'HTTP/1.1', 'HTTP/1.0', 'HTTP/0.9'}:
         raise ValueError(f'unsupported protocol version "{version}"')
