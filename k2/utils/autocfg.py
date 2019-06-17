@@ -37,6 +37,8 @@ class AutoCFG(dict):
                     for k in kwargs
                 },
             )
+        else:
+            super().update(*args, **kwargs)
 
 
     @staticmethod
