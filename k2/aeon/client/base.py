@@ -17,6 +17,7 @@ from urllib.parse import (
 
 
 from k2.utils.autocfg import AutoCFG
+from k2.utils.http import HTTP_CODE_MSG
 from k2.aeon.parser import parse_response_data
 from k2.logger import (
     new_channel,
@@ -31,7 +32,10 @@ ClientLogger = new_channel(
 )
 
 
-class BaseClientSession:
+class BaseHTTPSession:
+
+    defaults = {}
+
     def __init__(self, host, port, ssl=False, limit=None, loop=None, **kwargs):
         self._conn_args = {
             'host': host,
@@ -45,7 +49,7 @@ class BaseClientSession:
 
         self._rd = None
         self._wr = None
-        self._kwargs = kwargs
+        self.cfg = AutoCFG(kwargs).update_missing(self.defaults)
         self._logger = None
 
     async def __aenter__(self):
@@ -106,6 +110,9 @@ class BaseClientSession:
                     'Content-Length': len(data),
                 }
             )
+        await self._logger.debug(
+            f'''making request: {method} {self._conn_args['host']}:{self._conn_args['port']}{url} ? {params}'''
+        )
         self._wr.write(
             b'\r\n'.join(
                 [
@@ -147,7 +154,9 @@ class BaseClientSession:
 
     async def _read_answer(self):
         try:
-            return await parse_response_data(self._rd, **self._kwargs)
+            res = await parse_response_data(self._rd, **self.cfg)
+            await self._logger.debug(f'''result: {res.code} {HTTP_CODE_MSG.get(res.code, 'Unknown status')}''')
+            return res
         except ValueError as e:
             await self._logger.exception('Response error:')
 
