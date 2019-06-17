@@ -21,6 +21,7 @@ from k2.aeon.parser import parse_response_data
 from k2.logger import (
     new_channel,
     get_channel,
+    delete_channel,
 )
 
 
@@ -44,17 +45,20 @@ class ClientSession:
         self._rd = None
         self._wr = None
         self._kwargs = kwargs
+        self._logger = None
+
+    async def __aenter__(self):
+        await self._open()
         self._logger = new_channel(
             key=f'aeon-client-{hexlify(urandom(2)).decode()}',
             parent=ClientLogger,
         )
-
-    async def __aenter__(self):
-        await self._open()
         return self
 
     async def __aexit__(self, ex_type, ex_value, traceback):
         await self._close()
+        if self._logger:
+            delete_channel(self._logger.cfg.key)
         if ex_value:
             raise ex_value
 
