@@ -14,7 +14,7 @@ class Response:
         basic class for response
     """
 
-    def __init__(self, data=None, headers=None, code=200, cookies=None):
+    def __init__(self, data=None, headers=None, code=200, cookies=None, http_version='HTTP/1.1'):
         if data is not None and not isinstance(data, (str, bytes)):
             raise TypeError('data must be str or bytes')
 
@@ -35,10 +35,13 @@ class Response:
         if cookies:
             for ck in cookies:
                 self.add_cookie(**ck)
-        self._http_version = 'HTTP/1.1'
+        self._http_version = http_version
 
     async def _extra_prepare_data(self):
         return self.data
+
+    def __str__(self):
+        return f'<Response: {self._code} {HTTP_CODE_MSG[self._code]}>'
 
     @property
     def code(self):

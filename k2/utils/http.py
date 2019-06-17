@@ -161,8 +161,9 @@ DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
 MAX_DATA_LEN = 8 * (2 ** 20)
 MAX_HEADER_COUNT = 64
-MAX_HEADER_LEN = 2 ** 10
+MAX_HEADER_LEN = 2 ** 16
 MAX_URI_LENGTH = 256
+MAX_STATUS_LENGTH = 256
 
 
 async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
@@ -171,7 +172,10 @@ async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
     while a:
         a = await reader.read(1)
         if not a:
-            break
+            if ignore_zeros and not st:
+                continue
+            else:
+                break
         if (not st and (not ignore_zeros or a[0] >= 32)) or st:
             if a == b'\n':
                 break

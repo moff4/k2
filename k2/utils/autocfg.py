@@ -3,6 +3,11 @@ import time
 
 
 class AutoCFG(dict):
+
+    def __init__(self, *a, **b):
+        super().__setattr__('key_modifier', b.pop('key_modifier', None))
+        super().__init__(*a, **b)
+
     def __getattr__(self, key):
         if key in self:
             return self[key]
@@ -10,7 +15,29 @@ class AutoCFG(dict):
             return super().__getattribute__(key)
 
     def __setattr__(self, key, value):
+        if self.key_modifier:
+            key = self.key_modifier(key)
         self[key] = value
+
+    def __contains__(self, key):
+        return super().__contains__(self.key_modifier(key) if self.key_modifier else key)
+
+    def update(self, *args, **kwargs):
+        if self.key_modifier:
+            super().update(
+                *[
+                    {
+                        self.key_modifier(k): a[k]
+                        for k in a
+                    }
+                    for a in args
+                ],
+                **{
+                    self.key_modifier(k): kwargs[k]
+                    for k in kwargs
+                },
+            )
+
 
     @staticmethod
     def __deep_update(d1, d2, create=True):
