@@ -3,6 +3,7 @@ import os
 from urllib.parse import (
     urlparse,
     parse_qs,
+    unquote,
 )
 
 from k2.aeon.exceptions import AeonResponse
@@ -144,15 +145,15 @@ async def parse_response_data(reader, **kwargs):
 
     if version not in {'HTTP/1.1', 'HTTP/1.0', 'HTTP/0.9'}:
         raise ValueError(f'unsupported protocol version "{version}"')
-    
+
     if not code.isdigit():
         raise ValueError(f'status code is not integer "{code}"')
-    
+
     code = int(code)
     headers = AutoCFG(key_modifier=lambda x: x.lower())
 
     for i in range(cfg.max_header_count):
-        st = (await readln(reader, max_len=cfg.max_header_length)).strip()
+        st = unquote(await readln(reader, max_len=cfg.max_header_length)).strip()
 
         if not st:
             break
@@ -161,11 +162,20 @@ async def parse_response_data(reader, **kwargs):
             raise ValueError('Too many headers')
 
         key, *value = st.split(b':')
+        key = key.decode().lower()
         value = b':'.join(value).strip()
-        headers[key.decode().lower()] = value.decode()
+        if key in headers:
+            headers[key] = ', '.join(
+                [
+                    headers[key],
+                    value,
+                ],
+            )
+        else:
+            headers[key] = value.decode()
 
     content_length = 2 * bool(st)
-    
+
     if 'content-length' in headers:
         content_length += int(headers['content-length'])
         if cfg.max_data_length < content_length:
@@ -173,7 +183,7 @@ async def parse_response_data(reader, **kwargs):
         data = await reader.read(content_length)
     else:
         data = b''
-    
+
     return Response(
         data=data,
         headers=headers,
