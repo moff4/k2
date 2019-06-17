@@ -59,7 +59,6 @@ class Planner:
                         )
                     )
                 timeout = min(self.cfg.timeout, task.delay / 1.5)
-            print(timeout, task.next_run, task.delay)
             await asyncio.sleep(timeout)
 
     def add_task(self, key, target, **kwargs):
