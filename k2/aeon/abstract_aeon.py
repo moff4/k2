@@ -57,7 +57,10 @@ class AbstractAeon:
             self.cfg.ssl.set_servername_callback(self.servername_callback)
         self._task = None
         self._server = None
-        self._logger = logger.new_channel('aeon')
+        self._logger = logger.new_channel(
+            key='aeon',
+            parent=logger.get_channel('base_logger'),
+        )
 
     def servername_callback(self, sock, req_hostname, cb_context, as_callback=True):
         """

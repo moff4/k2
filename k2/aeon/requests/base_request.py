@@ -58,6 +58,9 @@ class Request:
         self._data = b''
         self._ssl = kwargs.get('ssl', False)
 
+    def __del__(self):
+        logger.delete_channel(self.logger.cfg.key)
+
     async def read(self):
         data = await parse_data(self._reader, **self.cfg.protocol)
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+from os import urandom
+from binascii import hexlify
+
 try:
     from ujson import dumps
 except ImportError:
@@ -14,7 +18,17 @@ from urllib.parse import (
 
 from k2.utils.autocfg import AutoCFG
 from k2.aeon.parser import parse_response_data
+from k2.logger import (
+    new_channel,
+    get_channel,
+    delete_channel,
+)
 
+
+ClientLogger = new_channel(
+    key='aeon-client',
+    parent=get_channel('aeon') or get_channel('base_logger'),
+)
 
 class BaseClientSession:
     def __init__(self, host, port, ssl=False, limit=None, loop=None, **kwargs):
@@ -31,13 +45,20 @@ class BaseClientSession:
         self._rd = None
         self._wr = None
         self._kwargs = kwargs
+        self._logger = None
 
     async def __aenter__(self):
         await self._open()
+        self._logger = new_channel(
+            key=f'aeon-client-{hexlify(urandom(2)).decode()}',
+            parent=ClientLogger,
+        )
         return self
 
     async def __aexit__(self, ex_type, ex_value, traceback):
         await self._close()
+        if self._logger:
+            delete_channel(self._logger.cfg.key)
         if ex_value:
             raise ex_value
 
@@ -124,7 +145,10 @@ class BaseClientSession:
         return await self._read_answer()
 
     async def _read_answer(self):
-        return await parse_response_data(self._rd, **self._kwargs)
+        try:
+            return await parse_response_data(self._rd, **self._kwargs)
+        except ValueError as e:
+            await self._logger.exception('Response error:')
 
     async def get(self, url, params=None, data=None, json=None, headers=None):
         return await self._request('GET', url=url, params=params, data=data, json=json, headers=headers)

@@ -25,7 +25,10 @@ class Planner:
             self.cfg.loop = asyncio.get_event_loop()
         self._tasks = {}
         self._running_tasks = []
-        self._logger = logger.new_channel('planner')
+        self._logger = logger.new_channel(
+            key='planner',
+            parent=logger.get_channel('base_logger'),
+        )
 
     def check_shedule(self):
         """
