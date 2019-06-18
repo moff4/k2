@@ -14,6 +14,17 @@ class ClientSession(BaseHTTPSession):
         }
     )
 
+    async def _change_conn(self, host, port, ssl=False):
+        await self._close()
+        self._conn_args.update(
+            {
+                'host': host,
+                'port': port,
+                'ssl': ssl,
+            },
+        )
+        await self._open()
+
     async def _request(self, method, url, *a, **b):
         allow_redirects = b.pop('allow_redirects', True)
         for i in range(self.cfg.max_rederict_count):
@@ -23,6 +34,24 @@ class ClientSession(BaseHTTPSession):
                 url = res.headers.get('location')
                 if url is None:
                     return res
+                await self._logger.debug('rederict to {}', url)
+                if url.startswith('http://') or url.startswith('https://'):
+                    new_url = urlparse(url)
+                    host, port = (
+                        new_url.netloc.split(':')
+                        if ':' in new_url.netloc else
+                        (
+                            new_url.netloc,
+                            80
+                            if new_url.scheme == 'http' else
+                            443,
+                        )
+                    )
+                    await self._change_conn(
+                        host=host,
+                        port=int(port),
+                        ssl=new_url.scheme == 'https',
+                    )
                 method = 'GET' if res.code == 303 else method
             else:
                 return res
@@ -51,6 +80,7 @@ class ClientSession(BaseHTTPSession):
         except Exception:
             await self._logger.exception('parse-cookie:')
 
+
 async def _request(method, url, params=None, data=None, json=None, headers=None, *a, **b):
     url = urlparse(url)
     host, port = (
@@ -71,7 +101,8 @@ async def _request(method, url, params=None, data=None, json=None, headers=None,
         **b,
     ) as session:
         return await session._request(
-            url.path,
+            method=method,
+            url=url.path or '/',
             params=params,
             data=data,
             json=json,
@@ -79,6 +110,7 @@ async def _request(method, url, params=None, data=None, json=None, headers=None,
             *a,
             **b,
         )
+
 
 async def get(url, params=None, data=None, json=None, headers=None, *a, **b):
     return await _request(
@@ -92,6 +124,7 @@ async def get(url, params=None, data=None, json=None, headers=None, *a, **b):
         **b,
     )
 
+
 async def post(url, params=None, data=None, json=None, headers=None, *a, **b):
     return await _request(
         method='POST',
@@ -103,6 +136,7 @@ async def post(url, params=None, data=None, json=None, headers=None, *a, **b):
         *a,
         **b,
     )
+
 
 async def head(url, params=None, data=None, json=None, headers=None, *a, **b):
     return await _request(
@@ -116,6 +150,7 @@ async def head(url, params=None, data=None, json=None, headers=None, *a, **b):
         **b,
     )
 
+
 async def put(url, params=None, data=None, json=None, headers=None, *a, **b):
     return await _request(
         method='PUT',
@@ -128,6 +163,7 @@ async def put(url, params=None, data=None, json=None, headers=None, *a, **b):
         **b,
     )
 
+
 async def delete(url, params=None, data=None, json=None, headers=None, *a, **b):
     return await _request(
         method='DELETE',
@@ -139,6 +175,7 @@ async def delete(url, params=None, data=None, json=None, headers=None, *a, **b):
         *a,
         **b,
     )
+
 
 async def options(url, params=None, data=None, json=None, headers=None, *a, **b):
     return await _request(
