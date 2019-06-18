@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from urllib.parse import urlparse
+
 from .base import BaseHTTPSession
 
 
@@ -48,3 +50,104 @@ class ClientSession(BaseHTTPSession):
                 res.headers.pop('set-cookie')
         except Exception:
             await self._logger.exception('parse-cookie:')
+
+async def _request(method, url, params=None, data=None, json=None, headers=None, *a, **b):
+    url = urlparse(url)
+    host, port = (
+        url.netloc.split(':')
+        if ':' in url.netloc else
+        (
+            url.netloc,
+            80
+            if url.scheme == 'http' else
+            443,
+        )
+    )
+    async with ClientSession(
+        host=host,
+        port=int(port),
+        ssl=url.scheme == 'https',
+        *a,
+        **b,
+    ) as session:
+        return await session._request(
+            url.path,
+            params=params,
+            data=data,
+            json=json,
+            headers=headers,
+            *a,
+            **b,
+        )
+
+async def get(url, params=None, data=None, json=None, headers=None, *a, **b):
+    return await _request(
+        method='GET',
+        url=url,
+        params=params,
+        data=data,
+        json=json,
+        headers=headers,
+        *a,
+        **b,
+    )
+
+async def post(url, params=None, data=None, json=None, headers=None, *a, **b):
+    return await _request(
+        method='POST',
+        url=url,
+        params=params,
+        data=data,
+        json=json,
+        headers=headers,
+        *a,
+        **b,
+    )
+
+async def head(url, params=None, data=None, json=None, headers=None, *a, **b):
+    return await _request(
+        method='HEAD',
+        url=url,
+        params=params,
+        data=data,
+        json=json,
+        headers=headers,
+        *a,
+        **b,
+    )
+
+async def put(url, params=None, data=None, json=None, headers=None, *a, **b):
+    return await _request(
+        method='PUT',
+        url=url,
+        params=params,
+        data=data,
+        json=json,
+        headers=headers,
+        *a,
+        **b,
+    )
+
+async def delete(url, params=None, data=None, json=None, headers=None, *a, **b):
+    return await _request(
+        method='DELETE',
+        url=url,
+        params=params,
+        data=data,
+        json=json,
+        headers=headers,
+        *a,
+        **b,
+    )
+
+async def options(url, params=None, data=None, json=None, headers=None, *a, **b):
+    return await _request(
+        method='OPTIONS',
+        url=url,
+        params=params,
+        data=data,
+        json=json,
+        headers=headers,
+        *a,
+        **b,
+    )

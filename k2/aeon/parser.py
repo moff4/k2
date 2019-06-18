@@ -7,7 +7,7 @@ from urllib.parse import (
 )
 
 from k2.aeon.exceptions import AeonResponse
-from k2.aeon.responses import Response
+from k2.aeon.responses.client.client import ClientResponse
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     MAX_DATA_LEN,
@@ -192,7 +192,7 @@ async def parse_response_data(reader, **kwargs):
     else:
         data = b''
 
-    return Response(
+    return ClientResponse(
         data=data,
         headers=headers,
         code=code,

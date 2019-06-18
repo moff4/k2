@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+try:
+    from ujson import loads
+except ImportError:
+    from json import loads
+
 from urllib.parse import quote
 
 from k2.utils.autocfg import AutoCFG
