@@ -59,17 +59,17 @@ class Channel:
         if 'log_levels' in inherite_rights:
             self.cfg.log_levels.update(self.parent.cfg.log_levels)
 
-    async def log(self, msg, level, args, kwargs, from_child=False):
+    async def log(self, msg, level, args=None, kwargs=None, from_child=False, exception=False):
         if level not in self.cfg.log_levels:
             return
-
+        args = args or []
+        kwargs = kwargs or {}
         timestamp = time.time()
-        raw_msg = msg.format(*args, **kwargs)
         log_msg = self.cfg.log_format.format(
             timestamp=time.strftime(self.cfg.time_format, time.localtime(timestamp)),
             level=level,
             key=self.cfg.key,
-            msg=raw_msg,
+            msg=msg,
         )
 
         self._logs.append(
@@ -111,16 +111,23 @@ class Channel:
         )
 
     async def exception(self, msg, *args, **kwargs):
+        az = [
+            msg.format(
+                *args,
+                **kwargs
+            ),
+            '\n',
+        ]
+        az.extend(traceback.format_exception(*sys.exc_info()))
         await self.log(
-            msg=''.join([msg, '\n'] + traceback.format_exception(*sys.exc_info())),
+            msg=''.join(az),
             level=kwargs.get('level', 'error'),
-            args=args,
-            kwargs=kwargs,
+            exception=True,
         )
 
     async def error(self, msg, *args, **kwargs):
         await self.log(
-            msg=msg,
+            msg=msg.format(*args, **kwargs),
             level='error',
             args=args,
             kwargs=kwargs,
@@ -128,7 +135,7 @@ class Channel:
 
     async def warning(self, msg, *args, **kwargs):
         await self.log(
-            msg=msg,
+            msg=msg.format(*args, **kwargs),
             level='warning',
             args=args,
             kwargs=kwargs,
@@ -136,7 +143,7 @@ class Channel:
 
     async def info(self, msg, *args, **kwargs):
         await self.log(
-            msg=msg,
+            msg=msg.format(*args, **kwargs),
             level='info',
             args=args,
             kwargs=kwargs,
@@ -144,7 +151,7 @@ class Channel:
 
     async def debug(self, msg, *args, **kwargs):
         await self.log(
-            msg=msg,
+            msg=msg.format(*args, **kwargs),
             level='debug',
             args=args,
             kwargs=kwargs,
