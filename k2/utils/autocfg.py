@@ -3,7 +3,9 @@ import time
 
 
 class AutoCFG(dict):
-
+    """
+        just upgraded interface of dict
+    """
     def __init__(self, *a, **b):
         super().__setattr__('key_modifier', b.pop('key_modifier', None))
         super().__init__(*a, **b)
@@ -39,7 +41,6 @@ class AutoCFG(dict):
             )
         else:
             super().update(*args, **kwargs)
-
 
     @staticmethod
     def __deep_update(d1, d2, create=True):
@@ -87,12 +88,34 @@ class AutoCFG(dict):
 
 
 class CacheDict(dict):
-    def __init__(self, timeout, func):
+    """
+        timeout - time to live for single value. will be auto deleted from dict
+        func (key -> value) - some function that'll be called in __getitem__ and that're not value in dict
+        kwargs:
+            clean_frequency - after clean_frequency calles of __getitem__ and __setitem__
+                dict will be checked for old rows (and delete them)
+    """
+    def __init__(self, timeout, func, **kwargs):
         self._timeout = timeout
         self._func = func
+        self.__cfg = AutoCFG(kwargs).update_missing(
+            {
+                'clean_frequency': 10,
+            }
+        )
+        self.__clean_counter = 0
         super().__init__()
 
+    def __clean__(self):
+        for key in self:
+            if super().__getitem__(key).get('time', 0) < time.time():
+                super().pop(key)
+
     def __getitem__(self, key):
+        if self.__cfg.clean_frequency is not None:
+            self.__clean_counter += 1
+            if not (self.__clean_counter % self.__cfg.clean_frequency):
+                self.__clean__()
         if (
             key not in self
         ) or (
@@ -100,11 +123,18 @@ class CacheDict(dict):
         ) or (
             super().__getitem__(key).get('time', 0) < time.time()
         ):
-            super().__setitem__(
-                key,
-                {
-                    'time': time.time() + self._timeout,
-                    'data': self._func(key),
-                },
-            )
+            self.__setitem__(key, self._func(key))
         return super().__getitem__(key)['data']
+
+    def __setitem__(self, key, value):
+        if self.__cfg.clean_frequency is not None:
+            self.__clean_counter += 1
+            if not (self.__clean_counter % self.__cfg.clean_frequency):
+                self.__clean__()
+        super().__setitem__(
+            key,
+            {
+                'time': time.time() + self._timeout,
+                'data': value,
+            },
+        )
