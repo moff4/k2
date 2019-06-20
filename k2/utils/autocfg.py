@@ -107,7 +107,7 @@ class CacheDict(dict):
         super().__init__()
 
     def __clean__(self):
-        for key in self:
+        for key in list(self.keys()):
             if super().__getitem__(key).get('time', 0) < time.time():
                 super().pop(key)
 
