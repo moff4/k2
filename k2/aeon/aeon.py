@@ -7,6 +7,7 @@ from k2.aeon.requests import Request
 from k2.aeon.responses import Response
 from k2.aeon.exceptions import AeonResponse
 from k2.aeon.ws import WSHandler
+from k2.aeon.namespace import NameSpace
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     NOT_FOUND,
@@ -34,23 +35,12 @@ class Aeon(AbstractAeon):
     def __init__(self, *a, **b):
         super().__init__(**b)
         self._request_prop = b.get('request', {})
+        self.namespace = NameSpace()
         for i in range(1, 6):
             stats.new(key=f'aeon-{i}xx', type='time_event_counter', description=f'HTTP status code {i}xx')
         stats.new(key='request_log', type='time_events', description='log for each request')
         stats.new(key='ws_connections', type='counter', description='opened ws conenctions')
         stats.new(key='connections', type='counter', description='opened conenctions')
-
-    def chooser(self, req):
-        """
-            find endpoint
-            return (endpoint dict, params)
-            or (None, None)
-        """
-        for key in self._endpoints:
-            m = re.match(key, req.url)
-            if m is not None:
-                return self._endpoints[key], m.groupdict()
-        return None, None
 
     async def client_connected_cb(self, reader, writer):
         async def run_ware(ware, *a, **b):
@@ -87,7 +77,7 @@ class Aeon(AbstractAeon):
 
                     await stats.add(key='request_log', value=f'{req.method} {req.url} {req.args}')
 
-                    endpoint, args = self.chooser(req)
+                    endpoint, args = self.namespace.find_best(req.url)
                     if not endpoint:
                         resp = Response(data=NOT_FOUND, code=404)
                     elif endpoint.type == 'cgi':
