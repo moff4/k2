@@ -6,6 +6,7 @@ from k2.aeon.abstract_aeon import AbstractAeon
 from k2.aeon.requests import Request
 from k2.aeon.responses import Response
 from k2.aeon.exceptions import AeonResponse
+from k2.aeon.sitemodules.base import SiteModule
 from k2.aeon.ws import WSHandler
 from k2.aeon.namespace import NameSpace
 from k2.utils.autocfg import AutoCFG
@@ -22,12 +23,6 @@ class Aeon(AbstractAeon):
         asyncio web server
     """
 
-    # key - url as regular expression
-    # value - dict:
-    #  target -> site_module / WSHandler
-    #  type -> 'cgi' / 'ws'
-    _endpoints = {}
-
     # objects must be callable or asyncio.corutines
     middleware = []
     postware = []
@@ -35,7 +30,9 @@ class Aeon(AbstractAeon):
     def __init__(self, *a, **b):
         super().__init__(**b)
         self._request_prop = b.get('request', {})
-        self.namespace = NameSpace()
+        self.namespace = NameSpace(
+            tree=b.get('namespace'),
+        )
         for i in range(1, 6):
             stats.new(key=f'aeon-{i}xx', type='time_event_counter', description=f'HTTP status code {i}xx')
         stats.new(key='request_log', type='time_events', description='log for each request')
@@ -77,18 +74,20 @@ class Aeon(AbstractAeon):
 
                     await stats.add(key='request_log', value=f'{req.method} {req.url} {req.args}')
 
-                    endpoint, args = self.namespace.find_best(req.url)
-                    if not endpoint:
+                    module, args = self.namespace.find_best(req.url)
+                    if not module:
                         resp = Response(data=NOT_FOUND, code=404)
-                    elif endpoint.type == 'cgi':
-                        module = endpoint.target
-                        if (
-                            module is None
-                        ) or (
-                            req.method not in endpoint.methods
-                        ) or (
-                            not hasattr(module, req.method.lower())
-                        ):
+
+                    elif isinstance(module, WSHandler):
+                        if req.headers.get('upgrade', '').lower() == 'websocket':
+                            await req.upgrade_to_ws(module, **args)
+                            req.keep_alive = False
+                            resp = None
+                        else:
+                            resp = Response(data=NOT_FOUND, code=404)
+
+                    elif isinstance(module, SiteModule) or issubclass(module, SiteModule):
+                        if not hasattr(module, req.method.lower()):
                             resp = Response(data=NOT_FOUND, code=404)
                         else:
                             for ware in self.middleware:
@@ -98,13 +97,6 @@ class Aeon(AbstractAeon):
                                 resp = await handler(req, **args)
                             else:
                                 resp = handler(req, **args)
-                    elif endpoint.type == 'ws':
-                        if req.headers.get('upgrade', '').lower() == 'websocket':
-                            await req.upgrade_to_ws(endpoint.target, **args)
-                            req.keep_alive = False
-                            resp = None
-                        else:
-                            resp = Response(data=NOT_FOUND, code=404)
                     else:
                         resp = Response(data=NOT_FOUND, code=404)
                 except AeonResponse as e:
@@ -132,6 +124,9 @@ class Aeon(AbstractAeon):
         finally:
             await stats.add('connections', -1)
 
+    def add_namespace(self, namespace):
+        self.namespace.create_tree(namespace)
+
     def add_site_module(self, key, target, methods=None):
         if methods is None:
             cgi_methods = HTTP_METHODS
@@ -144,13 +139,7 @@ class Aeon(AbstractAeon):
                 else:
                     raise ValueError(f'Unallowed HTTP-method "{i}"')
 
-        self._endpoints[key] = AutoCFG(
-            {
-                'target': target,
-                'type': 'cgi',
-                'methods': cgi_methods,
-            }
-        )
+        self.namespace[key] = target
 
     def add_middleware(self, target):
         if not callable(target):
@@ -165,9 +154,4 @@ class Aeon(AbstractAeon):
     def add_ws_handler(self, key, target):
         if not issubclass(target, WSHandler):
             raise TypeError(f'target ({target}) must be subclass of WSHandler')
-        self._endpoints[key] = AutoCFG(
-            {
-                'target': target,
-                'type': 'ws'
-            }
-        )
+        self.namespace[key] = target

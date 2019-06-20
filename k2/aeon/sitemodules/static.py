@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 import os
 
-from k2.aeon import AeonResponse
-from k2.aeon import Response
-from k2.aeon.responses import StaticResponse
+from k2.aeon.exceptions import AeonResponse
+from k2.aeon.responses import (
+    Response,
+    StaticResponse,
+)
+from k2.aeon.sitemodules.base import SiteModule
 
 
-class StaticSiteModule:
+class StaticSiteModule(SiteModule):
     def __init__(self, static_root, show_index=False, chunk_size=(2 ** 18), allow_links=False, cache_min=120):
         self._static_root = static_root
         self._show_index = show_index

@@ -25,19 +25,29 @@ $ python3 setup.py install
 
 Пример веб-сервиса
 ```python
-from k2.aeon import Aeon, Response
-server = Aeon(port=8080)
-server.add_site_module(
-    key='/',
-    target=type(
-        'cgi',
-        (),
-        {
-            'get': lambda request: Response(code=200, data='requested url: %s' % request.url)
-        }
-    )
-)
-server.run()
+from k2.aeon import Aeon, Response, SiteModule
+Aeon(
+    port=8080,
+    namespace={
+        '/': type(
+            'cgi',
+            (SiteModule,),
+            {
+                'get': lambda request: Response(
+                    code=200,
+                    data='<br>'.join(
+                        [
+                            'requested url: %s ? %s' % (request.url, request.args),
+                        ] + [
+                            '%s: %s' % (header, value)
+                            for header, value in request.headers.items()
+                        ]
+                    )
+                )
+            }
+        ),
+    }
+).run()
 ```
 
 ## Зависимости  

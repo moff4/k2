@@ -4,8 +4,8 @@ from k2.utils.autocfg import AutoCFG
 
 
 class NameSpace:
-    TYPE_SITEMODULE = 'sitemodule'
-    TYPE_NAMESPACE = 'namespace'
+    TYPE_LEAFE = 0
+    TYPE_SUBTREE = 1
 
     def __init__(self, tree=None):
         self._keys = AutoCFG()
@@ -22,15 +22,18 @@ class NameSpace:
         self._keys[key] = {
             'value': value,
             'type': (
-                self.TYPE_NAMESPACE
+                self.TYPE_SUBTREE
                 if isinstance(value, NameSpace) else
-                self.TYPE_SITEMODULE
+                self.TYPE_LEAFE
             )
         }
 
+    def items(self):
+        yield from self._keys.items()
+
     def find_best(self, name, args=None):
         args = args or {}
-        if name in self._keys and self._keys[name]['type'] == self.TYPE_SITEMODULE:
+        if name in self._keys and self._keys[name]['type'] == self.TYPE_LEAFE:
             return self._keys[name]['value'], args
 
         az = []
@@ -43,7 +46,7 @@ class NameSpace:
             return None, None
 
         for key, _args in sorted(az, key=lambda x: len(x[0])):
-            if self._keys[key]['type'] == self.TYPE_SITEMODULE:
+            if self._keys[key]['type'] == self.TYPE_LEAFE:
                 return self._keys[key]['value'], args
             else:
                 target, _args = self._keys[key]['value'].find_best(name, dict(args, **_args))
@@ -53,13 +56,13 @@ class NameSpace:
 
     def create_tree(self, tree):
         """
-            tree - dict:
+            tree - namespace or dict:
                 key == name
-                value - tree(dict) or SiteModule,
+                value - tree / SiteModule / WSHandler,
         """
         for key, value in tree.items():
             self[key] = (
                 NameSpace(value)
-                if isinstance(value, dict) else
+                if isinstance(value, (dict)) else
                 value
             )

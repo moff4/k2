@@ -6,7 +6,10 @@ from .responses import (
     Response,
     StaticResponse,
 )
-from .sitemodules import StaticSiteModule
+from .sitemodules import (
+    SiteModule,
+    StaticSiteModule,
+)
 from .ws import WSHandler
 from .client import ClientSession
 
@@ -14,6 +17,7 @@ __all__ = [
     'Aeon',
     'Response',
     'WSHandler',
+    'SiteModule',
     'AeonResponse',
     'ClientSession',
     'StaticResponse',
