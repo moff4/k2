@@ -24,7 +24,7 @@ class NameSpace:
     def __setitem__(self, key, value):
         try:
             err = (
-                not isinstance(value, (SiteModule, WSHandler))
+                not isinstance(value, (SiteModule, WSHandler, NameSpace, dict))
             ) and (
                 not issubclass(value, (SiteModule, WSHandler))
             )
