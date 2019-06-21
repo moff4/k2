@@ -28,7 +28,7 @@ class StaticResponse(Response):
         super().__init__()
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
         self.content_mod = None
-        self.vars = {}
+        self.vars = kwargs.get('vars') or {}
         self.req = request
         self._data = ''
 
