@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import re
 import asyncio
 
 from k2.aeon.abstract_aeon import AbstractAeon
@@ -9,10 +8,8 @@ from k2.aeon.exceptions import AeonResponse
 from k2.aeon.sitemodules.base import SiteModule
 from k2.aeon.ws import WSHandler
 from k2.aeon.namespace import NameSpace
-from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     NOT_FOUND,
-    HTTP_METHODS,
     SMTH_HAPPENED,
 )
 import k2.stats.stats as stats
@@ -128,18 +125,7 @@ class Aeon(AbstractAeon):
     def add_namespace(self, namespace):
         self.namespace.create_tree(namespace)
 
-    def add_site_module(self, key, target, methods=None):
-        if methods is None:
-            cgi_methods = HTTP_METHODS
-        else:
-            cgi_methods = set()
-            for i in methods:
-                i = i.upper()
-                if i in HTTP_METHODS:
-                    cgi_methods.add(i)
-                else:
-                    raise ValueError(f'Unallowed HTTP-method "{i}"')
-
+    def add_site_module(self, key, target):
         self.namespace[key] = target
 
     def add_middleware(self, target):

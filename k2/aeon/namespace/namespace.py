@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 import re
+
+from k2.aeon.sitemodules.base import SiteModule
+from k2.aeon.ws.handler import WSHandler
 from k2.utils.autocfg import AutoCFG
 
 
@@ -19,6 +22,16 @@ class NameSpace:
         return (self._keys[key]['value'], self._keys[key]['type'])
 
     def __setitem__(self, key, value):
+        try:
+            err = (
+                not isinstance(value, (SiteModule, WSHandler))
+            ) and (
+                not issubclass(value, (SiteModule, WSHandler))
+            )
+        except TypeError:
+            err = True
+        if err:
+            raise TypeError('value must be NameSpace, dict, SiteModule or WSHandler')
         self._keys[key] = {
             'value': value,
             'type': (
