@@ -40,7 +40,7 @@ class NameSpace:
         for key in self._keys:
             m = re.match(key, name)
             if m is not None:
-                az.append((key, m.groupdict()))
+                az.append((key, m))
 
         if not az:
             return None, None
@@ -49,7 +49,10 @@ class NameSpace:
             if self._keys[key]['type'] == self.TYPE_LEAFE:
                 return self._keys[key]['value'], args
             else:
-                target, _args = self._keys[key]['value'].find_best(name, dict(args, **_args))
+                target, _args = self._keys[key]['value'].find_best(
+                    name=name[m.end():],
+                    args=dict(args, **m.groupdict()),
+                )
                 if target:
                     return target, _args
         return None, None
