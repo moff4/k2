@@ -31,7 +31,12 @@ class NameSpace:
         except TypeError:
             err = True
         if err:
-            raise TypeError('value must be NameSpace, dict, SiteModule or WSHandler')
+            raise TypeError(
+                'value "{}" for key "{}" must be NameSpace, dict, SiteModule or WSHandler'.format(
+                    value,
+                    key,
+                )
+            )
         self._keys[key] = {
             'value': value,
             'type': (
