@@ -25,15 +25,19 @@ $ python3 setup.py install
 
 Пример веб-сервиса
 ```python
-from k2.aeon import Aeon, Response, SiteModule
+from k2.aeon import (
+    Aeon,
+    Response,
+    SiteModule,
+)
 from k2.aeon.sitemodules import Rederict
 Aeon(
     port=8080,
     namespace={
-        '^/': Rederict(
+        '^/$': Rederict(
             location='/index.html',
         ),
-        '^/*.html': type(
+        '^/+': type(
             'cgi',
             (SiteModule,),
             {

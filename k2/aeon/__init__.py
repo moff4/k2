@@ -7,6 +7,7 @@ from .responses import (
     StaticResponse,
 )
 from .sitemodules import (
+    Rederict,
     SiteModule,
     StaticSiteModule,
 )
@@ -15,6 +16,7 @@ from .client import ClientSession
 
 __all__ = [
     'Aeon',
+    'Rederict',
     'Response',
     'WSHandler',
     'SiteModule',
