@@ -75,6 +75,7 @@ class Aeon(AbstractAeon):
                     await stats.add(key='request_log', value=f'{req.method} {req.url} {req.args}')
 
                     module, args = self.namespace.find_best(req.url)
+                    await req.logger.debug('found module: {}', module)
                     if not module:
                         resp = Response(data=NOT_FOUND, code=404)
 

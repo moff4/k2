@@ -23,7 +23,7 @@ class NameSpace:
             'value': value,
             'type': (
                 self.TYPE_SUBTREE
-                if isinstance(value, NameSpace) else
+                if isinstance(value, (NameSpace, dict)) else
                 self.TYPE_LEAFE
             )
         }
@@ -45,7 +45,7 @@ class NameSpace:
         if not az:
             return None, None
 
-        for key, _args in sorted(az, key=lambda x: x[1].end() - x[1].start()):
+        for key, _args in sorted(az, key=lambda x: x[1].end() - x[1].start(), reverse=True):
             if self._keys[key]['type'] == self.TYPE_LEAFE:
                 return self._keys[key]['value'], args
             else:
@@ -66,6 +66,6 @@ class NameSpace:
         for key, value in tree.items():
             self[key] = (
                 NameSpace(value)
-                if isinstance(value, (dict)) else
+                if isinstance(value, (NameSpace, dict)) else
                 value
             )
