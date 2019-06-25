@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 
-import json
+try:
+    from ujson import dumps
+except ImportError:
+    from json import dumps
 
-from k2.aeon import Response
+from k2.aeon import (
+    Response,
+    SiteModule,
+)
 from k2.stats import (
     export,
     reset,
 )
 
-STATUS_OK = json.dumps({'status': 'ok'})
+STATUS_OK = dumps({'status': 'ok'})
 
 
-class StatsCGI:
+class StatsCGI(SiteModule):
     def get(self, req):
         return Response(
-            data=json.dumps(
+            data=dumps(
                 {
                     'status': 'ok',
                     'data': export(),
