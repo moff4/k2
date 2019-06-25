@@ -95,7 +95,7 @@ class CacheDict(dict):
             clean_frequency - after clean_frequency calles of __getitem__ and __setitem__
                 dict will be checked for old rows (and delete them)
     """
-    def __init__(self, timeout, func, **kwargs):
+    def __init__(self, timeout, func=None, **kwargs):
         self._timeout = timeout
         self._func = func
         self.__cfg = AutoCFG(kwargs).update_missing(
@@ -117,11 +117,15 @@ class CacheDict(dict):
             if not (self.__clean_counter % self.__cfg.clean_frequency):
                 self.__clean__()
         if (
-            key not in self
-        ) or (
-            not isinstance(super().__getitem__(key), dict)
-        ) or (
-            super().__getitem__(key).get('time', 0) < time.time()
+            self._func
+        ) and (
+            (
+                key not in self
+            ) or (
+                not isinstance(super().__getitem__(key), dict)
+            ) or (
+                super().__getitem__(key).get('time', 0) < time.time()
+            )
         ):
             self.__setitem__(key, self._func(key))
         return super().__getitem__(key)['data']

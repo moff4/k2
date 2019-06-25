@@ -41,6 +41,9 @@ class Response:
     async def _extra_prepare_data(self):
         return self.data
 
+    async def _cache_n_zip(self, data):
+        return data
+
     def __str__(self):
         return f'<Response: {self._code} {HTTP_CODE_MSG[self._code]}>'
 
@@ -99,6 +102,7 @@ class Response:
     async def export(self) -> str:
         data = await self._extra_prepare_data()
         data = data.encode() if isinstance(data, str) else data
+        data = await self._cache_n_zip(data)
         headers = self._headers.update_missing(STANDART_HEADERS)
         headers.update({'Content-Length': len(data)})
         return b''.join(

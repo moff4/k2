@@ -1,9 +1,13 @@
 #!/use/bin/env python3
 
 import os
+import gzip
 
 from k2.aeon.responses.base_response import Response
-from k2.utils.autocfg import AutoCFG
+from k2.utils.autocfg import (
+    AutoCFG,
+    CacheDict,
+)
 from k2.utils.http import (
     SMTH_HAPPENED,
     NOT_FOUND,
@@ -16,12 +20,20 @@ from .runner import ScriptRunner
 BIN = 'binary'
 TEXT = 'text'
 
+# key - <public> + '@' + 'path'
+# or <private> + ':' + uid + '@' + 'path'
+ServerCache = CacheDict(timeout=120)
+
 
 class StaticResponse(Response):
 
     defaults = {
-        'cache_min': 120,
-        'max_response_size': (2 ** 18),
+        'cache_min': 120,  # max-age
+        'cache_public': True,  # public/private
+        'cache_of_uid': None,  # if cache is private and server_cache -> uid of owner
+        'max_response_size': (2 ** 18),  # <=> chunk size
+        'server_cache': True,  # cache on server
+        'compress': 'gzip',  # compress data; allowed: 'gzip' or None
     }
 
     def __init__(self, request, **kwargs):
@@ -36,19 +48,24 @@ class StaticResponse(Response):
         )
         self.req = request
         self._data = ''
+        self._cached = False
 
-    def usefull_inserts(self, az):
-        """
-            az - list of tuples:
-              [.., (template, data), ..]
-            find template => change into data
-        """
-        if self.content_mod == TEXT:
-            for i in az:
-                while i[0] in self._data:
-                    j = self._data.index(i[0])
-                    self._data = self._data[:j] + i[1] + self._data[j + len(i[0]):]
-        return self
+    def __get_cache_key(self):
+        if self.cfg.cache_of_uid is None and not self.cfg.cache_public:
+            raise ValueError('UID must be set for private cache')
+        return ''.join(
+            [
+                'public@',
+                req.url,
+            ]
+            if self.cfg.cache_public else
+            [
+                'private:',
+                self.cfg.cache_of_uid,
+                '@',
+                req.url,
+            ]
+        )
 
     async def _run_scripts(self):
         if self.content_mod == TEXT and self._data:
@@ -65,6 +82,16 @@ class StaticResponse(Response):
             load static file
             return True in case of success
         """
+        if self.cfg.server_cache:
+            key = self.__get_cache_key()
+            if key in ServerCache:
+                data = ServerCache[key]
+                self._data = data['data']
+                self.headers = data['headers']
+                self.code = data['code']
+                self._cached = True
+                return True
+
         if os.path.isfile(filename):
             await self.req.logger.debug(f'send file "{filename}"')
             size = os.path.getsize(filename)
@@ -99,7 +126,10 @@ class StaticResponse(Response):
                 ).startswith('text') else
                 BIN
             )
-            headers['Cache-Control'] = f'max-age={self.cfg.cache_min}'
+            headers['Cache-Control'] = 'max-age={cache_min}, {cache_public}'.format(
+                cache_min=self.cfg.cache_min,
+                cache_public='public' if self.cfg.cache_public else 'private'
+            )
             self.add_headers(headers)
             self.code = _code
             return True
@@ -114,5 +144,22 @@ class StaticResponse(Response):
         self.code = 307 + permanent
         self.add_headers(Location=url)
 
+    async def _cache_n_zip(self, data):
+        if self.content_mod == TEXT:
+            if self.cfg.compress == 'gzip':
+                data = gzip.compress(data)
+                self.headers['Content-Encoding'] = 'gzip'
+
+        if self.cfg.server_cache and self.code not in {204, 206}:
+            ServerCache[self.__get_cache_key()] = {
+                'data': data,
+                'headers': self.headers,
+                'code': self.code,
+            }
+        return data
+
     async def _extra_prepare_data(self):
-        return await self._run_scripts()
+        if not self._cached:
+            return await self._run_scripts()
+        else:
+            return self._data
