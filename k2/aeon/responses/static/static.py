@@ -56,14 +56,14 @@ class StaticResponse(Response):
         return ''.join(
             [
                 'public@',
-                req.url,
+                self.req.url,
             ]
             if self.cfg.cache_public else
             [
                 'private:',
                 self.cfg.cache_of_uid,
                 '@',
-                req.url,
+                self.req.url,
             ]
         )
 
@@ -83,11 +83,12 @@ class StaticResponse(Response):
             return True in case of success
         """
         if self.cfg.server_cache:
+            await self.req.logger.debug('get file from cache')
             key = self.__get_cache_key()
             if key in ServerCache:
                 data = ServerCache[key]
                 self._data = data['data']
-                self.headers = data['headers']
+                self.headers.update(data['headers'])
                 self.code = data['code']
                 self._cached = True
                 return True
@@ -118,6 +119,7 @@ class StaticResponse(Response):
                         }
                     )
                 _code = 206
+            await self.req.logger.debug(f'file "{filename}" loaded: {len(self._data)}b')
             headers = content_type(filename)
             self.content_mod = (
                 TEXT
@@ -130,7 +132,7 @@ class StaticResponse(Response):
                 cache_min=self.cfg.cache_min,
                 cache_public='public' if self.cfg.cache_public else 'private'
             )
-            self.add_headers(headers)
+            self.headers.update(headers)
             self.code = _code
             return True
         else:
@@ -147,10 +149,13 @@ class StaticResponse(Response):
     async def _cache_n_zip(self, data):
         if self.content_mod == TEXT:
             if self.cfg.compress == 'gzip':
+                l1 = len(data)
                 data = gzip.compress(data)
+                await self.req.logger.debug('compress data {} -> {}', l1, len(data))
                 self.headers['Content-Encoding'] = 'gzip'
 
         if self.cfg.server_cache and self.code not in {204, 206}:
+            await self.req.logger.debug('save data to cache')
             ServerCache[self.__get_cache_key()] = {
                 'data': data,
                 'headers': self.headers,

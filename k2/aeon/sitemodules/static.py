@@ -17,17 +17,21 @@ class StaticSiteModule(SiteModule):
         self._allow_links = allow_links
         self._cache_min = cache_min
 
-    def get(self, req):
+    async def get(self, req):
         headers = {}
         code = 404
         data = b''
         filename = self._static_root + req.url
         if os.path.isfile(filename):
-            return StaticResponse(
-                file=filename,
+            resp = StaticResponse(
+                request=req,
                 cache_min=self._cache_min,
                 max_response_size=self._chunk_size,
             )
+            await resp.load_static_file(
+                filename=filename,
+            )
+            return resp
         elif self._show_index and os.path.isdir(filename):
             urls = []
             url = req.url.rstrip('/')

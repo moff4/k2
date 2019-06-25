@@ -116,18 +116,17 @@ class CacheDict(dict):
             self.__clean_counter += 1
             if not (self.__clean_counter % self.__cfg.clean_frequency):
                 self.__clean__()
-        if (
-            self._func
-        ) and (
-            (
+        if self._func:
+            if (
                 key not in self
             ) or (
                 not isinstance(super().__getitem__(key), dict)
             ) or (
                 super().__getitem__(key).get('time', 0) < time.time()
-            )
-        ):
-            self.__setitem__(key, self._func(key))
+            ):
+                self.__setitem__(key, self._func(key))
+            else:
+                self.pop(key, None)
         return super().__getitem__(key)['data']
 
     def __setitem__(self, key, value):
