@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import gzip
 
 try:
     from ujson import loads
@@ -10,6 +11,14 @@ from k2.aeon.responses.base_response import Response
 
 
 class ClientResponse(Response):
+
+    def __init__(self, **b):
+        try:
+            if 'headers' in b and b.get('data'):
+                if b['headers'].get('content-encoding') == 'gzip':
+                    b['data'] = gzip.decompress(b['data'])
+        finally:
+            super().__init__(**b)
 
     @property
     def ok(self):

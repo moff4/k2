@@ -99,6 +99,7 @@ class BaseHTTPSession:
             headers.update_missing(
                 {
                     'Content-Type': 'application/json',
+                    'Accept-Encoding': 'gzip',
                 }
             )
         elif not data and method in {'POST', 'PUT', 'DELETE'} and params:
