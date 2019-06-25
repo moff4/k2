@@ -140,18 +140,30 @@ class AbstractAeon:
         ports = f'{self.cfg.port}, {self.cfg.https_port}' if self.cfg.use_ssl else self.cfg.port
         tasks = []
         try:
-            if any((x in sys.argv for x in {'--stdout', '--stdout=aeon'})):
-                print(f'server started on {ports}')
-
             tasks = [
+                asyncio.ensure_future(
+                    self._logger.info(
+                        'server started on {}',
+                        ports,
+                    )
+                )
+            ]
+
+            tasks.extend(
                 asyncio.ensure_future(task)
                 for task in self.tasks
-            ]
+            )
             self.cfg.loop.run_forever()
         except KeyboardInterrupt:
             pass
         finally:
             for task in tasks:
                 task.cancel()
-            if any((x in sys.argv for x in {'--stdout', '--stdout=aeon'})):
-                print(f'server stopped on {ports}')
+            self.cfg.loop.run_until_complete(
+                asyncio.ensure_future(
+                    self._logger.info(
+                        'server stopped on {}',
+                        ports,
+                    )
+                )
+            )
