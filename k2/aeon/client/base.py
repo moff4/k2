@@ -92,6 +92,9 @@ class BaseHTTPSession:
             {
                 'Host': self._conn_args['host'],
                 'User-Agent': 'AeonClient/1.0',
+                # FIXME
+                # Cannot read data as Content-Length not passed
+                # 'Accept-Encoding': 'gzip',
             }
         )
         if not data and json:
@@ -99,7 +102,6 @@ class BaseHTTPSession:
             headers.update_missing(
                 {
                     'Content-Type': 'application/json',
-                    'Accept-Encoding': 'gzip',
                 }
             )
         elif not data and method in {'POST', 'PUT', 'DELETE'} and params:
