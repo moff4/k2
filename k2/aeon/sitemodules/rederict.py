@@ -7,16 +7,20 @@ from k2.utils.http import HTTP_METHODS
 
 
 class Rederict(SiteModule):
-    def __init__(self, location, code=302, headers=None, methods=None):
+    def __init__(self, location=None, code=302, headers=None, methods=None, url_modifier=None):
+        if not location and not url_modifier:
+            raise ValueError('must be passed "location" or "url_modifier"')
         self._code = 302
         self._headers = AutoCFG(headers or {})
-        self._headers.update(
-            location=location,
-        )
+        self._url_modifier = url_modifier
+        if not url_modifier:
+            self._headers.update(location=location)
         for method in (methods or HTTP_METHODS):
             setattr(self, method.lower(), self._req_handler)
 
     async def _req_handler(self, req):
+        if self._url_modifier:
+            self._headers.update(location=self._url_modifier(req))
         return Response(
             code=self._code,
             headers=self._headers,
