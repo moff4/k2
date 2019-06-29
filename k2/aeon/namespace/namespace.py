@@ -63,7 +63,7 @@ class NameSpace:
         if not az:
             return None, None
 
-        for key, _args in sorted(az, key=lambda x: x[1].end() - x[1].start(), reverse=True):
+        for key, m in sorted(az, key=lambda x: x[1].end() - x[1].start(), reverse=True):
             if self._keys[key]['type'] == self.TYPE_LEAFE:
                 return self._keys[key]['value'], args
             else:

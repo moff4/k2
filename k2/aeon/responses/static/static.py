@@ -51,7 +51,7 @@ class StaticResponse(Response):
         self._cached = False
 
     def __get_cache_key(self):
-        if self.cfg.cache_of_uid is None and not self.cfg.cache_public:
+        if not self.cfg.cache_public and self.cfg.cache_of_uid is None:
             raise ValueError('UID must be set for private cache')
         return ''.join(
             [
@@ -61,7 +61,7 @@ class StaticResponse(Response):
             if self.cfg.cache_public else
             [
                 'private:',
-                self.cfg.cache_of_uid,
+                str(self.cfg.cache_of_uid),
                 '@',
                 self.req.url,
             ]
