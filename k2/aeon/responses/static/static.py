@@ -1,6 +1,6 @@
 #!/use/bin/env python3
-
 import os
+import sys
 import gzip
 
 from k2.aeon.responses.base_response import Response
@@ -22,7 +22,7 @@ TEXT = 'text'
 
 # key - <public> + '@' + 'path'
 # or <private> + ':' + uid + '@' + 'path'
-ServerCache = CacheDict(timeout=120)
+ServerCache = CacheDict(timeout=120 * ('--no-cache' not in sys.argv))
 
 
 class StaticResponse(Response):
@@ -85,13 +85,15 @@ class StaticResponse(Response):
         if self.cfg.server_cache:
             await self.req.logger.debug('get file from cache')
             key = self.__get_cache_key()
-            if key in ServerCache:
+            try:
                 data = ServerCache[key]
                 self._data = data['data']
                 self.headers.update(data['headers'])
                 self.code = data['code']
                 self._cached = True
                 return True
+            except KeyError:
+                pass
 
         if os.path.isfile(filename):
             await self.req.logger.debug(f'send file "{filename}"')
