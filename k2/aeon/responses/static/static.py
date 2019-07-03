@@ -150,7 +150,7 @@ class StaticResponse(Response):
 
     async def _cache_n_zip(self, data):
         if self.content_mod == TEXT:
-            if 'gzip' not in self.req.headers.get('accept-encoding'):
+            if 'gzip' not in self.req.headers.get('accept-encoding', ''):
                 return
             if self.cfg.compress == 'gzip':
                 l1 = len(data)
