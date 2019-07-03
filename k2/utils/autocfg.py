@@ -125,8 +125,6 @@ class CacheDict(dict):
                 super().__getitem__(key).get('time', 0) < time.time()
             ):
                 self.__setitem__(key, self._func(key))
-            else:
-                self.pop(key, None)
         return super().__getitem__(key)['data']
 
     def __setitem__(self, key, value):
