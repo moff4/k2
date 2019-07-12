@@ -6,7 +6,7 @@ with open('README.md', 'r', encoding='utf-8') as fh:
 
 setuptools.setup(
     name='k2',
-    version='1.2.1',
+    version='1.2.2',
     author='Komissarov Andrey',
     author_email='Komissar.off.andrey@mail.ru',
     description='Framework for simple services',
