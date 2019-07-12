@@ -53,6 +53,18 @@ def apply(obj, scheme, key=None):
             raise ValueError(
                 f'"{key}" not passed filter'
             )
+        elif scheme.get('blank') is False and not obj:
+            raise ValueError(
+                f'"{key}" is blank'
+            )
+        elif 'max_length' in scheme and len(obj) > scheme['max_length']:
+            raise ValueError(
+                f'"{key}" > max_length'
+            )
+        elif 'min_length' in scheme and len(obj) < scheme['min_length']:
+            raise ValueError(
+                f'"{key}" < min_length'
+            )
 
         if MAP[scheme['type']] == MAP[list]:
             obj = [apply(i, scheme['value'], key=_key) for i in obj]
