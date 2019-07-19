@@ -85,16 +85,9 @@ class Aeon(AbstractAeon):
                             resp = Response(data=NOT_FOUND, code=404)
 
                     elif isinstance(module, SiteModule) or issubclass(module, SiteModule):
-                        if not hasattr(module, req.method.lower()):
-                            resp = Response(data=NOT_FOUND, code=404)
-                        else:
-                            for ware in self.middleware:
-                                await run_ware(ware, module=module, request=req, args=args)
-                            handler = getattr(module, req.method.lower())
-                            if asyncio.iscoroutinefunction(handler):
-                                resp = await handler(req, **args)
-                            else:
-                                resp = handler(req, **args)
+                        for ware in self.middleware:
+                            await run_ware(ware, module=module, request=req, args=args)
+                        resp = await module.handle(request=req, **args)
                     else:
                         resp = Response(data=NOT_FOUND, code=404)
                 except AeonResponse as e:

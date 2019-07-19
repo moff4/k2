@@ -63,7 +63,7 @@ async def parse_data(reader, **kwargs):
     req.method = bytes(tmp).decode()
     if not req.method:
         raise AeonResponse('Empty method field', code=400)
-    elif req.method not in cfg.allowed_methods:
+    elif req.method not in cfg.allowed_methods and '*' not in cfg.allowed_methods:
         raise AeonResponse(f'Unexpected method "{req.method}"', code=405)
 
     tmp = []
@@ -132,7 +132,6 @@ async def parse_response_data(reader, **kwargs):
         'max_header_count': MAX_HEADER_COUNT,
         'max_data_length': MAX_DATA_LEN,
         'max_status_length': MAX_STATUS_LENGTH,
-        'allowed_methods': HTTP_METHODS,
         'expected_http_version': {'HTTP/1.1'},
     }
     cfg = AutoCFG(__defaults).update_fields(kwargs)

@@ -23,7 +23,7 @@ class ScriptRunner:
         try:
             return str(eval(text, args, {}))
         except Exception as e:
-            await self._logger.exception(f'Unexpectedly got: {e}')
+            await self._logger.exception('Unexpectedly got:')
 
     async def _run_1_0(self, text, args):
         text = '\n'.join(
@@ -38,7 +38,7 @@ class ScriptRunner:
             exec(text, args, local)
             return str(local['result'])
         except Exception as e:
-            await self._logger.exception(f'Unexpectedly got: {e}')
+            await self._logger.exception('Unexpectedly got: {}')
 
     async def run(self, args):
         text = self.text
@@ -52,7 +52,7 @@ class ScriptRunner:
                 script = text[i + len(sci[0]):j]
                 result = await sci[2](script, args)
                 if result is None:
-                    await self._logger.error(f'script #{k} ({script[:15]}{"..." if len(script) >= 25 else ""}) failed')
+                    await self._logger.error('script #{} ({script[:15]}{"..." if len(script) >= 25 else ""}) failed', k)
                     return False
                 text = pt1 + result + pt2
                 k += 1
