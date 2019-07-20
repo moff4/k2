@@ -2,16 +2,19 @@
 
 import asyncio
 
+from k2.aeon.responses import Response
+from k2.utils.http import NOT_FOUND
+
 
 class SiteModule:
 
-    async def handle(self, req):
-        f_name = req.method.lower()
+    async def handle(self, request, **args):
+        f_name = request.method.lower()
         if not hasattr(self, f_name):
             return Response(data=NOT_FOUND, code=404)
 
-        handler = getattr(module, f_name)
+        handler = getattr(self, f_name)
         if asyncio.iscoroutinefunction(handler):
-            return await handler(req, **args)
+            return await handler(request, **args)
         else:
-            return handler(req, **args)
+            return handler(request, **args)
