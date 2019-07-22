@@ -2,11 +2,10 @@
 
 import k2.logger as logger
 from k2.aeon.parser import parse_data
+from k2.aeon.exceptions import AeonResponse
 from k2.aeon.ws import WSHandler
 from k2.utils.autocfg import AutoCFG
-from k2.utils.http import (
-    is_local_ip
-)
+from k2.utils.http import is_local_ip
 import k2.stats.stats as stats
 
 
@@ -62,7 +61,10 @@ class Request:
         logger.delete_channel(self.logger.cfg.key)
 
     async def read(self):
-        data = await parse_data(self._reader, **self.cfg.protocol)
+        try:
+            data = await parse_data(self._reader, **self.cfg.protocol)
+        except UnicodeDecodeError:
+            raise AeonResponse(code=400)
 
         self._url = data.url
         self._args = data.args
