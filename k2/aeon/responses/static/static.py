@@ -57,6 +57,8 @@ class StaticResponse(Response):
             [
                 'public@',
                 self.req.url,
+                '?',
+                str(self.req.args),
             ]
             if self.cfg.cache_public else
             [
@@ -64,6 +66,8 @@ class StaticResponse(Response):
                 str(self.cfg.cache_of_uid),
                 '@',
                 self.req.url,
+                '?',
+                str(self.req.args),
             ]
         )
 
@@ -98,7 +102,7 @@ class StaticResponse(Response):
         if os.path.isfile(filename):
             await self.req.logger.debug(f'send file "{filename}"')
             size = os.path.getsize(filename)
-            if size <= self.cfg.max_response_size:
+            if not self.cfg.max_response_size or size <= self.cfg.max_response_size:
                 with open(filename, 'rb') as f:
                     self._data = f.read()
                 _code = 200
