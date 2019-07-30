@@ -29,6 +29,7 @@ TypeMap = {
     'time_event_counter': TimeEventCounter,
 }
 
+
 async def __callback(event, key, *a, **b):
     if Collection[key]['callback'] is not None:
         if callable(Collection[key]['callback']):
@@ -40,6 +41,9 @@ async def __callback(event, key, *a, **b):
 def new(key, type, description=None, callback=None, *a, **b):
     if type not in TypeMap:
         raise ValueError(f'unknown stat type "{type}"')
+    if callback is not None:
+        if not callable(callback) and not asyncio.iscoroutinefunction(callback):
+            raise TypeError('callback must be callable or asyncio.coroutine')
     Collection[key] = {
         'obj': TypeMap[type](*a, **b),
         'desc': description,
@@ -82,7 +86,7 @@ async def reset(key=None):
 def export_one(key):
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
-    Collection[key]['obj'].export()
+    return Collection[key]['obj'].export()
 
 
 def export():
