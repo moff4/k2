@@ -31,31 +31,32 @@ from k2.aeon import (
     SiteModule,
 )
 from k2.aeon.sitemodules import Rederict
-Aeon(
+
+class Handler(SiteModule):
+    def get(request):
+        data = '<br>'.join(
+            [
+                'requested url: %s ? %s' % (request.url, request.args),
+            ] + [
+                '%s: %s' % (header, value)
+                for header, value in request.headers.items()
+            ]
+        )
+        return Response(
+            code=200,
+            data=data,
+        )
+
+server = Aeon(
     port=8080,
     namespace={
         '^/$': Rederict(
             location='/index.html',
         ),
-        '^/+': type(
-            'cgi',
-            (SiteModule,),
-            {
-                'get': lambda request: Response(
-                    code=200,
-                    data='<br>'.join(
-                        [
-                            'requested url: %s ? %s' % (request.url, request.args),
-                        ] + [
-                            '%s: %s' % (header, value)
-                            for header, value in request.headers.items()
-                        ]
-                    )
-                )
-            }
-        ),
+        '^/+': Handler(),
     }
-).run()
+)
+server.run()
 ```
 
 ## Зависимости  
