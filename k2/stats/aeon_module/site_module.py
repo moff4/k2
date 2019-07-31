@@ -31,7 +31,7 @@ class StatsCGI(SiteModule):
 
     async def handle(self, request, **args):
 
-        if (self.cfg.localips and not req.is_local()):
+        if (self.cfg.localips and not request.is_local()):
             return Response(code=404)
 
         if (
