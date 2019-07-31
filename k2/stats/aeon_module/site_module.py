@@ -30,36 +30,35 @@ class StatsCGI(SiteModule):
         self.cfg = AutoCFG(kwargs).update_missing(self.defautls)
 
     async def handle(self, request, **args):
+
+        if (self.cfg.localips and not req.is_local()):
+            return Response(code=404)
+
         if (
             self.cfg['secret-value']
         ) and (
             self.cfg['secret-value'] != request.headers.get(self.cfg['secret-header'], None)
         ):
             return Response(code=403)
+
         return await super().handle(request, **args)
 
     async def get(self, req):
-        if not self.cfg.localips or (self.cfg.localips and req.is_local()):
-            return Response(
-                data=dumps(
-                    {
-                        'status': 'ok',
-                        'data': export(),
-                    }
-                ),
-                code=200,
-                headers={
-                    'Content-Type': 'application/json; charset=utf-8',
+        return Response(
+            data=dumps(
+                {
+                    'status': 'ok',
+                    'data': export(),
                 }
-            )
-        else:
-            return Response(code=404, data=NOT_FOUND)
+            ),
+            code=200,
+            headers={
+                'Content-Type': 'application/json; charset=utf-8',
+            }
+        )
 
     async def post(self, req):
-        if not self.cfg.localips or (self.cfg.localips and req.is_local()):
-            await reset(
-                key=req.args.get('key', None)
-            )
-            return Response(code=200, data=STATUS_OK)
-        else:
-            return Response(code=404, data=NOT_FOUND)
+        await reset(
+            key=req.args.get('key', None)
+        )
+        return Response(code=200, data=STATUS_OK)
