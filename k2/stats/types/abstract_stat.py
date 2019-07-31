@@ -21,7 +21,18 @@ class AbstractStat:
         pass
 
     def export(self):
-        pass
+        """
+            return only value
+        """
+        return None
 
     def get_type(self):
         return self._type
+
+    def options(self):
+        """
+            return value and extra stats configurations
+        """
+        return {
+            'data': self.export(),
+        }

@@ -43,3 +43,13 @@ class TimeEvents(AbstractStat):
 
     def get_type(self):
         return self._type
+
+    def options(self):
+        d = super().options()
+        d.update(
+            {
+                'count': len(self._value),
+                'limit': self._limit,
+            }
+        )
+        return d

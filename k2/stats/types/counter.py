@@ -21,3 +21,12 @@ class Counter(AbstractStat):
 
     def export(self):
         return self._value
+
+    def options(self):
+        d = super().options()
+        d.update(
+            {
+                'default': self._default,
+            }
+        )
+        return d

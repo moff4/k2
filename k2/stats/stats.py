@@ -83,18 +83,23 @@ async def reset(key=None):
             await __callback('reset', key)
 
 
+def __do_export(key):
+    obj = Collection[key]['obj']
+    return {
+        'data': obj.options(),
+        'type': obj.get_type(),
+        'description': Collection[key]['desc'],
+    }
+
+
 def export_one(key):
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
-    return Collection[key]['obj'].export()
+    return __do_export(key)
 
 
 def export():
     return {
-        key: {
-            'data': Collection[key]['obj'].export(),
-            'type': Collection[key]['obj'].get_type(),
-            'description': Collection[key]['desc'],
-        }
+        key: __do_export(key)
         for key in Collection
     }

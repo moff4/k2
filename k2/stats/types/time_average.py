@@ -16,4 +16,4 @@ class TimeAverage(Average):
             self._value.pop(0)
 
     def export(self):
-        return sum([j for i, j in self._value]) / len(self._value)
+        return sum(j for i, j in self._value) / len(self._value)

@@ -23,3 +23,13 @@ class Average(AbstractStat):
 
     def export(self):
         return sum(self._value) / len(self._value)
+
+    def options(self):
+        d = super().options()
+        d.update(
+            {
+                'count': len(self._value),
+                'limit': self._limit,
+            }
+        )
+        return d
