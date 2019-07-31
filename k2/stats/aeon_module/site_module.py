@@ -22,10 +22,21 @@ STATUS_OK = dumps({'status': 'ok'})
 class StatsCGI(SiteModule):
     defautls = {
         'localips': False,
+        'secret-value': None,
+        'secret-header': 'x-stats-secret',
     }
 
     def __init__(self, **kwargs):
         self.cfg = AutoCFG(kwargs).update_missing(self.defautls)
+
+    async def handle(self, request, **args):
+        if (
+            self.cfg['secret-value']
+        ) and (
+            self.cfg['secret-value'] != request.headers.get(self.cfg['secret-header'], None)
+        ):
+            return Response(code=403)
+        return await super().handle(request, **args)
 
     async def get(self, req):
         if not self.cfg.localips or (self.cfg.localips and req.is_local()):
