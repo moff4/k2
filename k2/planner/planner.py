@@ -52,11 +52,9 @@ class Planner:
             if task is not None:
                 self._logger.debug('next task "{}" in {:.2f} sec', task.name, task.delay)
                 if abs(time.time() - task.next_run) < eps:
+                    task.prepare_for_run()
                     self._running_tasks.append(
-                        self.cfg.loop.create_task(
-                            task.run(),
-                            # self.cfg.loop,
-                        )
+                        self.cfg.loop.create_task(task.run())
                     )
                 timeout = min(self.cfg.timeout, task.delay / 1.5)
             await asyncio.sleep(timeout)

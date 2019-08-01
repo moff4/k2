@@ -5,6 +5,8 @@ import time
 import k2.logger as logger
 from k2.utils.autocfg import AutoCFG
 
+SHEDULE_LIMIT = 100
+
 
 class Task:
     __defaults = {
@@ -20,6 +22,7 @@ class Task:
             'hour': 0,
         },
         'weekdays': set(range(0, 8)),
+        'count': None,
         'args': (),
         'kwargs': {},
         'enable': True,
@@ -30,11 +33,21 @@ class Task:
             raise TypeError('target must be callable or async coroutine')
         self._cfg = AutoCFG(self.__defaults).deep_update_fields(kwargs)
         self._target = target
-        self._last_run = 0
-        self._missing_run = 0
         self._offset = (self._cfg.offset['hour'] * 60 + self._cfg.offset['min']) * 60 + self._cfg.offset['sec']
         self._inter = (self._cfg.interval['hour'] * 60 + self._cfg.interval['min']) * 60 + self._cfg.interval['sec']
-        self._logger = logger.new_channel(f'planner_task_{self._cfg.key}', parent='planner')
+        self.logger = logger.new_channel('planner_task_{}'.format(self._cfg.key), parent='planner')
+        self._shedule = []
+
+    def _generate_shedule(self):
+        if not self.enable:
+            return
+
+        _t = time.time()
+        nr = ((_t // self._inter) + 1) * self._inter + self._offset
+        while len(self._shedule) < SHEDULE_LIMIT and (nr - _t) < 7 * 3600:
+            if time.localtime(nr).tm_wday in self._cfg.weekdays:
+                self._shedule.append(nr)
+            nr += self._inter
 
     @property
     def enable(self):
@@ -57,26 +70,31 @@ class Task:
 
     @property
     def next_run(self):
-        _t = time.time()
-        _tm = time.localtime(_t)
-        if _tm.tm_wday in self._cfg.weekdays:
-            nr = ((_t // self._inter) + 1) * self._inter + self._offset
-            nr -= abs(_t - nr) // self._inter * self._inter
-            return nr
+        if not self._shedule:
+            self._generate_shedule()
+        if self._shedule:
+            return self._shedule[0]
+
+    def prepare_for_run(self, force=False, run_copy=False):
+        if self._shedule and not force:
+            self._shedule.pop(0)
+        if self._shedule and not run_copy:
+            self._shedule.pop(0)
 
     async def run(self, force=False, run_copy=False):
         """
             run task
+            do not call task directlly
+            only throught planner
         """
-        self._missing_run = self._missing_run + 1 if run_copy else max(self._missing_run - 1, 0)
-        _t = int(time.time())
-        if (_t - self._last_run) < (self._inter / 2) or force:
-            return
-        self._last_run = _t
-        self._logger.debug('Gonna run')
+        await self.logger.debug('Gonna run')
         _t = time.time()
-        if asyncio.iscoroutinefunction(self._target):
-            await self._target(*self._cfg.args, **self._cfg.kwargs)
+        try:
+            if asyncio.iscoroutinefunction(self._target):
+                await self._target(*self._cfg.args, **self._cfg.kwargs)
+            else:
+                self._target(*self._cfg.args, **self._cfg.kwargs)
+        except Exception:
+            await self.logger.exception('Task "{}" failed', self._cfg.key)
         else:
-            self._target(*self._cfg.args, **self._cfg.kwargs)
-        self._logger.debug('Done in {:.3f} sec', time.time() - _t)
+            await self.logger.debug('Done in {:.3f} sec', time.time() - _t)
