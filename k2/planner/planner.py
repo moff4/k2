@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import asyncio
 import time
 
@@ -44,30 +45,48 @@ class Planner:
             key=lambda task: task.next_run,
         ) if self._tasks else None
 
+    async def _chek_running_tasks(self):
+        new_task_list = []
+        for key, task in self._running_tasks:
+            if not task.done():
+                new_task_list.append((key, task))
+            else:
+                if task.exception() is not None:
+                    await self._logger.error('Task "{}" failed with exception:\n{}', key, '\n'.join(task.get_stack()))
+                else:
+                    result = task.result()
+                    if result:
+                        await self._logger.info('Task "{}" ends with result: {}', key, result)
+        self._running_tasks = new_task_list
+
     async def _mainloop(self):
+        await self._logger.debug('planner started')
         while self.RUN:
             task = self.check_shedule()
             timeout = self.cfg.timeout
             eps = 0.1
             if task is not None:
-                self._logger.debug('next task "{}" in {:.2f} sec', task.name, task.delay)
+                await self._logger.debug('next task "{}" in {:.2f} sec', task.name, task.delay)
                 if abs(time.time() - task.next_run) < eps:
-                    task.prepare_for_run()
-                    self._running_tasks.append(
-                        self.cfg.loop.create_task(task.run())
-                    )
+                    self.run_task(task.name)
                 timeout = min(self.cfg.timeout, task.delay / 1.5)
+            await self._chek_running_tasks()
             await asyncio.sleep(timeout)
 
-    def add_task(self, key, target, **kwargs):
+    def run_task(self, key, run_copy=False):
+        task = self._tasks[key]
+        task.prepare_for_run()
+        self._running_tasks.append((task.name, self.cfg.loop.create_task(task.run())))
+
+    def add_task(self, target, **kwargs):
+        key = kwargs.get('key') or ''.join(hex(i)[2:] for i in os.urandom(4)).upper()
         if key in self._tasks:
             raise ValueError(f'key "{key}" already in use')
-        self._tasks[key] = Task(target=target, key=key, **kwargs)
+        kwargs['key'] = key
+        self._tasks[key] = Task(target=target, **kwargs)
 
     def run(self):
-        self.task = self.cfg.loop.create_task(
-            self._mainloop()
-        )
+        self.task = self.cfg.loop.create_task(self._mainloop())
 
     def stop(self):
         self.RUN = False

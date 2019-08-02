@@ -42,6 +42,7 @@ class Task:
         if not self.enable:
             return
 
+        self._shedule = []
         _t = time.time()
         nr = ((_t // self._inter) + 1) * self._inter + self._offset
         while len(self._shedule) < SHEDULE_LIMIT and (nr - _t) < 7 * 3600:
@@ -75,13 +76,11 @@ class Task:
         if self._shedule:
             return self._shedule[0]
 
-    def prepare_for_run(self, force=False, run_copy=False):
-        if self._shedule and not force:
-            self._shedule.pop(0)
+    def prepare_for_run(self, run_copy=False):
         if self._shedule and not run_copy:
             self._shedule.pop(0)
 
-    async def run(self, force=False, run_copy=False):
+    async def run(self, run_copy=False):
         """
             run task
             do not call task directlly
