@@ -2,6 +2,7 @@
 import os
 import asyncio
 import time
+from collections import defaultdict
 
 import k2.logger as logger
 from k2.planner.task import Task
@@ -30,6 +31,29 @@ class Planner:
             key='planner',
             parent=logger.get_channel('base_logger'),
         )
+
+    @property
+    def shedule(self):
+        """
+            return shedule for all tasks
+            as list of tuples(task-name, timestamp)
+        """
+        shedule = []
+        for key, task in self._tasks.items():
+            shedule.extend(((key, ts) for ts in task.shedule))
+        return sorted(shedule, key=lambda x: x[1])
+
+    @shedule.setter
+    def shedule(self, shedule):
+        """
+            takes list of tuples as shedule for all tasks
+            and upd each task shedules
+        """
+        ss = defaultdict(list)
+        for key, ts in shedule:
+            ss[key].append(ts)
+        for key, shedule in ss:
+            self._tasks[key].shedule = shedule
 
     def check_shedule(self):
         """

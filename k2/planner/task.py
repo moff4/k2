@@ -51,6 +51,14 @@ class Task:
             nr += self._inter
 
     @property
+    def shedule(self):
+        return self._shedule
+
+    @shedule.setter
+    def shedule(self, shedule):
+        self._shedule = shedule
+
+    @property
     def enable(self):
         return self._cfg.enable
 
