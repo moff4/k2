@@ -23,7 +23,7 @@ $ python3 setup.py install
 
 ## Примеры
 
-Пример веб-сервиса
+#### Пример веб-сервиса
 ```python
 from k2.aeon import (
     Aeon,
@@ -57,6 +57,23 @@ server = Aeon(
     }
 )
 server.run()
+```
+
+#### Пример крон-сервиса  
+```python
+import time
+import asyncio
+
+def print_time():
+    global x
+    t = time.time()
+    print(t - x)
+    x = t
+
+pl = Planner()
+pl.add_task(target=print_time, interval={'sec': 3})
+pl.run()
+asyncio.get_event_loop().run_forever()
 ```
 
 ## Зависимости  
