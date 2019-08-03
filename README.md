@@ -64,11 +64,12 @@ server.run()
 import time
 import asyncio
 
+t = 0
 def print_time():
-    global x
-    t = time.time()
-    print(t - x)
-    x = t
+    global t
+    _t = time.time()
+    print('%s seconds passed since last call' % (_t - t))
+    t = _t
 
 pl = Planner()
 pl.add_task(target=print_time, interval={'sec': 3})
