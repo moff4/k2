@@ -64,6 +64,8 @@ server.run()
 import time
 import asyncio
 
+from k2.planner import Planner
+
 t = 0
 def print_time():
     global t
