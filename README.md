@@ -68,7 +68,7 @@ t = 0
 def print_time():
     global t
     _t = time.time()
-    print('%s seconds passed since last call' % (_t - t))
+    print('%.2f seconds passed since last call' % (_t - t))
     t = _t
 
 pl = Planner()
