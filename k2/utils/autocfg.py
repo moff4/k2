@@ -6,6 +6,7 @@ class AutoCFG(dict):
     """
         just upgraded interface of dict
     """
+
     def __init__(self, *a, **b):
         super().__setattr__('key_modifier', b.pop('key_modifier', None))
         super().__init__(*a, **b)
@@ -41,6 +42,7 @@ class AutoCFG(dict):
             )
         else:
             super().update(*args, **kwargs)
+        return self
 
     @staticmethod
     def __deep_update(d1, d2, create=True):
@@ -95,6 +97,7 @@ class CacheDict(dict):
             clean_frequency - after clean_frequency calles of __getitem__ and __setitem__
                 dict will be checked for old rows (and delete them)
     """
+
     def __init__(self, timeout, func=None, **kwargs):
         self._timeout = timeout
         self._func = func
