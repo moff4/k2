@@ -43,6 +43,7 @@ class BaseHTTPSession:
             'host': host,
             'port': port,
             'ssl': ssl,
+            **kwargs,
         }
         if limit:
             self._conn_args['limit'] = limit
