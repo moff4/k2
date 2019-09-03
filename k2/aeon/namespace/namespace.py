@@ -65,7 +65,7 @@ class NameSpace:
 
         for key, m in sorted(az, key=lambda x: x[1].end() - x[1].start(), reverse=True):
             if self._keys[key]['type'] == self.TYPE_LEAFE:
-                return self._keys[key]['value'], args
+                return self._keys[key]['value'], dict(args, **m.groupdict())
             else:
                 target, _args = self._keys[key]['value'].find_best(
                     name=name[m.end():],
