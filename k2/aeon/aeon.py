@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import asyncio
 
 from k2.aeon.abstract_aeon import AbstractAeon
 from k2.aeon.requests import Request
@@ -8,9 +7,11 @@ from k2.aeon.exceptions import AeonResponse
 from k2.aeon.sitemodules.base import SiteModule
 from k2.aeon.ws import WSHandler
 from k2.aeon.namespace import NameSpace
+from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
     NOT_FOUND,
     SMTH_HAPPENED,
+    run_ware,
 )
 import k2.stats.stats as stats
 
@@ -36,15 +37,53 @@ class Aeon(AbstractAeon):
         stats.new(key='ws_connections', type='counter', description='opened ws conenctions')
         stats.new(key='connections', type='counter', description='opened conenctions')
 
-    async def client_connected_cb(self, reader, writer):
-        async def run_ware(ware, *a, **b):
-            if asyncio.iscoroutinefunction(ware):
-                await ware(*a, **b)
-            else:
-                ware(*a, **b)
+    async def _handle_request(self, request):
+        try:
+            module, args = self.namespace.find_best(request.url)
+            if not module:
+                resp = Response(data=NOT_FOUND, code=404)
 
+            elif isinstance(module, WSHandler):
+                await request.logger.debug('found ws-handler: {}', module)
+                if request.headers.get('upgrade', '').lower() == 'websocket':
+                    await request.upgrade_to_ws(module, **args)
+                    request.keep_alive = False
+                    resp = None
+                else:
+                    resp = Response(data=NOT_FOUND, code=404)
+
+            elif isinstance(module, SiteModule) or issubclass(module, SiteModule):
+                await request.logger.debug('found module: {}', module)
+                for ware in self.middleware:
+                    await run_ware(ware, module=module, request=request, args=args)
+                resp = await module.handle(request=request, **args)
+
+            else:
+                resp = Response(data=NOT_FOUND, code=404)
+
+        except AeonResponse as e:
+            resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
+
+        except (RuntimeError, ConnectionResetError):
+            request.keep_alive = False
+
+        except Exception as e:
+            await request.logger.exception('aeon-loop ex: {}', e)
+            request.keep_alive = False
+            resp = Response(data=SMTH_HAPPENED, code=500)
+
+        if resp:
+            for ware in request.postware:
+                await run_ware(ware, module=module, request=request, args=args, response=resp)
+            for ware in self.postware:
+                await run_ware(ware, module=module, request=request, args=args, response=resp)
+
+        return resp
+
+    async def client_connected_cb(self, reader, writer):
         _log_extras = '' if writer.get_extra_info('socket').getsockname()[1] != self.cfg.https_port else '[ssl] '
 
+        resp = None
         keep_alive = True
         addr = writer.get_extra_info('peername')
         await self._logger.debug(_log_extras + f'new connection from {addr[0]}:{addr[1]}')
@@ -56,64 +95,51 @@ class Aeon(AbstractAeon):
                 except Exception as e:
                     await self._logger.error('get_extra_info(\'socket\'): {}', e)
                     _ssl = False
-                resp = None
-                req = Request(
+                request = Request(
                     addr=addr,
                     reader=reader,
                     writer=writer,
                     ssl=_ssl,
                     **self._request_prop,
                 )
-                try:
-                    await req.logger.debug(f'gonna read data')
-                    await req.read()
-                    await req.logger.debug(f'data read')
-
-                    await stats.add(key='request_log', value=f'{req.method} {req.url} {req.args}')
-
-                    module, args = self.namespace.find_best(req.url)
-                    await req.logger.debug('found module: {}', module)
-                    if not module:
-                        resp = Response(data=NOT_FOUND, code=404)
-
-                    elif isinstance(module, WSHandler):
-                        if req.headers.get('upgrade', '').lower() == 'websocket':
-                            await req.upgrade_to_ws(module, **args)
-                            req.keep_alive = False
-                            resp = None
-                        else:
-                            resp = Response(data=NOT_FOUND, code=404)
-
-                    elif isinstance(module, SiteModule) or issubclass(module, SiteModule):
-                        for ware in self.middleware:
-                            await run_ware(ware, module=module, request=req, args=args)
-                        resp = await module.handle(request=req, **args)
-                    else:
-                        resp = Response(data=NOT_FOUND, code=404)
-                except AeonResponse as e:
-                    resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
-                except (RuntimeError, ConnectionResetError):
-                    req.keep_alive = False
-                except Exception as e:
-                    await req.logger.exception('aeon-loop ex: {}', e)
-                    req.keep_alive = False
-                    resp = Response(data=SMTH_HAPPENED, code=500)
+                await request.read()
+                await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
+                resp = await self._handle_request(request)
 
                 if resp is not None:
-                    await req.logger.debug('gonna send response')
-                    await req.send(resp)
+                    await request.logger.debug('gonna send response')
+                    await request.send(resp)
 
-                for ware in req.postware:
-                    await run_ware(ware, module=module, request=req, args=args, response=resp)
-
-                for ware in self.postware:
-                    await run_ware(ware, module=module, request=req, args=args, response=resp)
-
-                keep_alive = req.headers.get('connection', 'keep-alive') != 'close' and req.keep_alive
+                keep_alive = request.headers.get('connection', 'keep-alive') != 'close' and request.keep_alive
         except Exception as e:
             await self._logger.exception('handler error: {}', e)
         finally:
             await stats.add('connections', -1)
+
+    async def handle_request(self, url, headers=None, args=None, data=None, method='GET', http_version='HTTP/1.1'):
+        """
+            imulate incoming request
+            usefull for testing
+        """
+        request = Request(
+            addr=('127.0.0.1', 0),
+            reader=None,
+            writer=None,
+            **self._request_prop,
+        )
+        request.init_from_dict(
+            AutoCFG(
+                {
+                    'url': url,
+                    'headers': headers or {},
+                    'args': args or {},
+                    'method': method,
+                    'http_version': http_version,
+                    'data': data or b'',
+                }
+            )
+        )
+        return await self._handle_request(request)
 
     def add_namespace(self, namespace):
         self.namespace.create_tree(namespace)

@@ -62,10 +62,11 @@ class Request:
 
     async def read(self):
         try:
-            data = await parse_data(self._reader, **self.cfg.protocol)
+            self.init_from_dict(await parse_data(self._reader, **self.cfg.protocol))
         except UnicodeDecodeError:
             raise AeonResponse(code=400)
 
+    def init_from_dict(self, data):
         self._url = data.url
         self._args = data.args
         self._method = data.method
