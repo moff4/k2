@@ -59,17 +59,27 @@ class ClientSession(BaseHTTPSession):
     async def _parse_cookie(self, res):
         try:
             if 'set-cookie' in res.headers:
-                for cookie_str in res.headers['set-cookie'].split(','):
+                cookie_strs = res.headers['set-cookie'].split(',')
+                i = 0
+                while i < len(cookie_strs):
                     options = []
                     kwoptions = {}
-                    kv, *pr = cookie_str.split(';')
+                    kv, *pr = cookie_strs[i].split(';')
                     key, value = [i.strip() for i in kv.split('=')]
-                    for i in pr:
-                        if '=' in pr:
-                            pr_k, pr_v = [i.strip() for i in kv.split('=')]
+                    while pr:
+                        j = pr.pop(0)
+                        if '=' in j:
+                            pr_k, pr_v = [k.strip() for k in j.split('=')]
+                            if pr_k == 'expires':
+                                i += 1
+                                pr_next = cookie_strs[i].split(';')
+                                j = pr_next.pop(0)
+                                pr.extend(pr_next)
+                                pr_v = ','.join([pr_v, j])
                             kwoptions[pr_k] = pr_v
                         else:
-                            options.append(i.strip())
+                            options.append(j.strip())
+                    i += 1
                 res.add_cookie(
                     key,
                     value,

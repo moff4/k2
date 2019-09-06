@@ -89,6 +89,7 @@ class BaseHTTPSession:
             headers or {},
             key_modifier=lambda x: x.lower(),
         )
+        params = params or {}
         headers.update_missing(
             {
                 'Host': self._conn_args['host'],
@@ -107,7 +108,7 @@ class BaseHTTPSession:
             )
         elif not data and method in {'POST', 'PUT', 'DELETE'} and params:
             data = urlencode(params)
-            params = None
+            params = {}
         if data:
             if isinstance(data, str):
                 data = data.encode()
