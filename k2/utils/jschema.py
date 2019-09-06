@@ -27,12 +27,15 @@ def apply(obj, scheme, key=None):
         scheme - jschema
         key is name of top-level object (or None) ; (for log)
         scheme ::= {
-          type     : type of this object : "list/dict/str/int/float"
-          value    : scheme - need for list/dict - pointer to scheme for child
+          type     : type of this object : "list/dict/str/int/float/const"
+          value    : scheme - need for
+                        - list/dict - pointer to scheme for child
+                        - const - list or set (or iterable) of allowed values
           default  : default value if this object does not exists (if callable will be called)
           filter   : function value -> bool - if false then raise error
           pre_call : function value -> value - will be called before cheking filter and value
           post_call: function value -> value - will be called after cheking filter and value
+          blank    : raise error if value is blank
         }
     """
     def default(value):
@@ -46,7 +49,12 @@ def apply(obj, scheme, key=None):
     if 'pre_call' in scheme:
         obj = scheme['pre_call'](obj)
 
-    if scheme['type'] in MAP:
+    if scheme['type'] == 'const':
+        if obj not in scheme['value']:
+            raise ValueError(
+                f'"{key}" is not allowed'
+            )
+    elif scheme['type'] in MAP:
         if not isinstance(obj, MAP[scheme['type']]):
             raise ValueError(f'''expected type "{scheme['type']}" {extra} ; got {type(obj)}''')
         elif 'filter' in scheme and not scheme['filter'](obj):
