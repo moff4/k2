@@ -59,6 +59,8 @@ class Aeon(AbstractAeon):
                         await run_ware(ware, module=module, request=request, args=args)
                 resp = await module.handle(request=request, **args)
 
+            elif isinstance(module, Response):
+                resp = module
             else:
                 resp = Response(data=NOT_FOUND, code=404)
 
