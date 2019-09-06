@@ -37,7 +37,7 @@ class Aeon(AbstractAeon):
         stats.new(key='ws_connections', type='counter', description='opened ws conenctions')
         stats.new(key='connections', type='counter', description='opened conenctions')
 
-    async def _handle_request(self, request):
+    async def _handle_request(self, request, _run_ware=True):
         try:
             module, args = self.namespace.find_best(request.url)
             if not module:
@@ -54,8 +54,9 @@ class Aeon(AbstractAeon):
 
             elif isinstance(module, SiteModule) or issubclass(module, SiteModule):
                 await request.logger.debug('found module: {}', module)
-                for ware in self.middleware:
-                    await run_ware(ware, module=module, request=request, args=args)
+                if _run_ware:
+                    for ware in self.middleware:
+                        await run_ware(ware, module=module, request=request, args=args)
                 resp = await module.handle(request=request, **args)
 
             else:
@@ -72,7 +73,7 @@ class Aeon(AbstractAeon):
             request.keep_alive = False
             resp = Response(data=SMTH_HAPPENED, code=500)
 
-        if resp:
+        if resp and _run_ware:
             for ware in request.postware:
                 await run_ware(ware, module=module, request=request, args=args, response=resp)
             for ware in self.postware:
@@ -116,7 +117,16 @@ class Aeon(AbstractAeon):
         finally:
             await stats.add('connections', -1)
 
-    async def handle_request(self, url, headers=None, args=None, data=None, method='GET', http_version='HTTP/1.1'):
+    async def handle_request(
+        self,
+        url,
+        headers=None,
+        args=None,
+        data=None,
+        method='GET',
+        http_version='HTTP/1.1',
+        _run_ware=False,
+    ):
         """
             imulate incoming request
             usefull for testing
@@ -139,7 +149,7 @@ class Aeon(AbstractAeon):
                 }
             )
         )
-        return await self._handle_request(request)
+        return await self._handle_request(request, _run_ware=_run_ware)
 
     def add_namespace(self, namespace):
         self.namespace.create_tree(namespace)
