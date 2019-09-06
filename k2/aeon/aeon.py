@@ -52,7 +52,7 @@ class Aeon(AbstractAeon):
                 else:
                     resp = Response(data=NOT_FOUND, code=404)
 
-            elif isinstance(module, SiteModule) or issubclass(module, SiteModule):
+            elif isinstance(module, SiteModule):
                 await request.logger.debug('found module: {}', module)
                 if _run_ware:
                     for ware in self.middleware:
@@ -119,7 +119,7 @@ class Aeon(AbstractAeon):
         finally:
             await stats.add('connections', -1)
 
-    async def handle_request(
+    async def emulate_request(
         self,
         url,
         headers=None,
