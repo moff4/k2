@@ -54,7 +54,7 @@ def apply(obj, scheme, key=None):
     if scheme['type'] == 'const':
         if obj not in scheme['value']:
             raise ValueError(
-                f'"{key}" is not allowed'
+                f'"{obj}" is not allowed as "{key}"'
             )
     elif scheme['type'] in MAP:
         if not isinstance(obj, MAP[scheme['type']]):
