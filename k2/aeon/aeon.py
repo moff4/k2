@@ -105,7 +105,10 @@ class Aeon(AbstractAeon):
                     ssl=_ssl,
                     **self._request_prop,
                 )
-                await request.read()
+                try:
+                    await request.read()
+                except RuntimeError:
+                    break
                 await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
                 resp = await self._handle_request(request)
 
