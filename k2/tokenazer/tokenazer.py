@@ -93,7 +93,7 @@ class Tokenazer:
                 ),
                 scheme=self.cookie_scheme,
                 key='cookie'
-            )
+            ) if data else None
         except Exception as e:
             await self.logger.exception('decode cookie: {}', e, level='warning')
             return None
