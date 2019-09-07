@@ -2,6 +2,7 @@
 import re
 
 from k2.aeon.sitemodules.base import SiteModule
+from k2.aeon.responses import Response
 from k2.aeon.ws.handler import WSHandler
 from k2.utils.autocfg import AutoCFG
 
@@ -24,15 +25,15 @@ class NameSpace:
     def __setitem__(self, key, value):
         try:
             err = (
-                not isinstance(value, (SiteModule, WSHandler, NameSpace, dict))
+                not isinstance(value, (SiteModule, WSHandler, NameSpace, Response, dict))
             ) and (
-                not issubclass(value, (SiteModule, WSHandler))
+                not issubclass(value, WSHandler)
             )
         except TypeError:
             err = True
         if err:
             raise TypeError(
-                'value "{}" for key "{}" must be NameSpace, dict, SiteModule or WSHandler'.format(
+                'value "{}" for key "{}" must be NameSpace, dict, SiteModule, WSHandler or Response'.format(
                     value,
                     key,
                 )
@@ -79,7 +80,7 @@ class NameSpace:
         """
             tree - namespace or dict:
                 key == name
-                value - tree / SiteModule / WSHandler,
+                value - tree / SiteModule / WSHandler / Response,
         """
         for key, value in tree.items():
             self[key] = (

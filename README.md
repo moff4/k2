@@ -33,7 +33,7 @@ from k2.aeon import (
 from k2.aeon.sitemodules import Rederict
 
 class Handler(SiteModule):
-    def get(request):
+    def get(self, request):
         data = '<br>'.join(
             [
                 'requested url: %s ? %s' % (request.url, request.args),
@@ -53,6 +53,7 @@ server = Aeon(
         '^/$': Rederict(
             location='/index.html',
         ),
+        '^/not_found.html': Response(code=404, data='Not Found'),
         '^/+': Handler(),
     }
 )

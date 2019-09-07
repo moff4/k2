@@ -1,5 +1,7 @@
 #!/usr/bin/etc python3
 
+import asyncio
+
 PRIVETE_IP = set(
     {'10.', '192.168.', '0.0.0.0', '127.0.0.'}.union(
         {('100.%s.' % i) for i in range(64, 128)}
@@ -228,3 +230,10 @@ def is_local_ip(addr) -> bool:
             for x in PRIVETE_IP
         )
     )
+
+
+async def run_ware(ware, *a, **b):
+    if asyncio.iscoroutinefunction(ware):
+        await ware(*a, **b)
+    else:
+        ware(*a, **b)
