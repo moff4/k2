@@ -5,7 +5,11 @@ import time
 import asyncio
 import traceback
 
+from multiprocessing import Lock
+
 from k2.utils.autocfg import AutoCFG
+
+Locks = {}
 
 
 class Channel:
@@ -32,6 +36,8 @@ class Channel:
             if any((re.match(f'--no-log=.*{self.cfg.key}.*', x) is not None for x in sys.argv)):
                 self.cfg.autosave = False
 
+        if self.cfg.autosave and self.cfg.log_file not in Locks:
+            Locks[self.cfg.log_file] = Lock()
         self.parents = []
         self._logs = []
         self._t = 0
@@ -82,13 +88,14 @@ class Channel:
             if self.cfg.stdout:
                 print(log_msg)
             if self.cfg.autosave:
-                with open(self.cfg.log_file, 'a') as f:
-                    f.write(''.join([log_msg, '\n']))
+                with Locks[self.cfg.log_file]:
+                    with open(self.cfg.log_file, 'a') as f:
+                        f.write(''.join([log_msg, '\n']))
         if self.cfg.callback is not None:
             params = {
                 'key': self.cfg.key,
                 'level': level,
-                'raw_msg': raw_msg,
+                'raw_msg': msg,
                 'log_msg': log_msg,
             }
 
