@@ -110,6 +110,7 @@ async def _request(method, url, params=None, data=None, json=None, headers=None,
         *a,
         **b,
     ) as session:
+        b.pop('timeout', None)
         return await session._request(
             method=method,
             url=url.path or '/',

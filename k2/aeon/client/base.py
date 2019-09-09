@@ -43,7 +43,11 @@ class BaseHTTPSession:
             'host': host,
             'port': port,
             'ssl': ssl,
-            **kwargs,
+            **{
+                k: v
+                for k, v in kwargs.items()
+                if k not in {'timeout'}
+            },
         }
         if limit:
             self._conn_args['limit'] = limit
