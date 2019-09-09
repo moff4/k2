@@ -25,17 +25,30 @@ class Aeon(AbstractAeon):
     middleware = []
     postware = []
 
+    defaults = {
+        'multiprocesssing': True,
+        'worker_num': 4,
+    }
+
     def __init__(self, *a, **b):
         super().__init__(**b)
         self._request_prop = b.get('request', {})
         self.namespace = NameSpace(
             tree=b.get('namespace'),
         )
+        self.cfg.update(
+            AutoCFG(self.defaults).update_fields(b)
+        )
         for i in range(1, 6):
             stats.new(key=f'aeon-{i}xx', type='time_event_counter', description=f'HTTP status code {i}xx')
         stats.new(key='request_log', type='time_events', description='log for each request')
         stats.new(key='ws_connections', type='counter', description='opened ws conenctions')
         stats.new(key='connections', type='counter', description='opened conenctions')
+
+    @property
+    def tasks(self):
+        # create worker pool
+        return super().tasks
 
     async def _handle_request(self, request, _run_ware=True):
         try:
@@ -84,6 +97,11 @@ class Aeon(AbstractAeon):
         return resp
 
     async def client_connected_cb(self, reader, writer):
+        # if self.cfg.multiprocesssing:
+        #     use workers pool
+        await self.handle_single_connection(reader, writer)
+
+    async def handle_single_connection(self, reader, writer):
         _log_extras = '' if writer.get_extra_info('socket').getsockname()[1] != self.cfg.https_port else '[ssl] '
 
         resp = None
