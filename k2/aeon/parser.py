@@ -165,9 +165,6 @@ async def parse_response_data(reader, **kwargs):
         if not st:
             break
 
-        if len(headers) > cfg.max_header_count:
-            raise ValueError('Too many headers')
-
         key, *value = st.split(':')
         key = key.lower()
         value = unquote(':'.join(value).strip())
@@ -181,16 +178,24 @@ async def parse_response_data(reader, **kwargs):
         else:
             headers[key] = value
 
-    content_length = 2 * bool(st)
+    if st:
+        raise ValueError('Too many headers')
 
+    data = []
     if 'content-length' in headers:
-        content_length += int(headers['content-length'])
+        content_length = int(headers['content-length'])
         if cfg.max_data_length < content_length:
             raise ValueError(f'Got unexpectedly much data: {content_length} bytes')
-        data = await reader.read(content_length)
-    else:
-        data = b''
-
+        step = 2 ** 14
+        loaded = 0
+        _l = content_length - loaded
+        while _l:
+            load_now = min(step, content_length - loaded)
+            _d = await reader.read(load_now)
+            data.append(_d)
+            loaded += len(_d)
+            _l = content_length - loaded
+    data = b''.join(data)
     return ClientResponse(
         data=data,
         headers=headers,
