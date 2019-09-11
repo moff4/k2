@@ -107,8 +107,8 @@ class Aeon(AbstractAeon):
                 )
                 try:
                     await request.read()
-                except RuntimeError:
-                    break
+                except AeonResponse as e:
+                    resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
                 await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
                 resp = await self._handle_request(request)
 
