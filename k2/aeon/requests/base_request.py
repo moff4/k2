@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 
 import k2.logger as logger
 from k2.aeon.parser import parse_data
@@ -38,6 +39,7 @@ class Request:
     postware = []
 
     def __init__(self, addr, reader, writer, **kwargs):
+        self.__start_time = time.time()
         self._initialized = False
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
         self.logger = logger.new_channel(f'{addr[0]}:{addr[1]}', parent='aeon')
@@ -129,8 +131,8 @@ class Request:
         try:
             res = await resp.export()
             self._writer.write(res)
-
-            f, args = '{} {} {} {}', (self._method, resp.code, self.url, self.args)
+            total_time = time.time() - self.__start_time
+            f, args = '{} {} {} {}, t={:.4f}', (self._method, resp.code, self.url, self.args, total_time)
             if self.cfg.request_header in self._headers:
                 f = ''.join(['({}) ', f])
                 args = (self._headers[self.cfg.request_header], *args)
