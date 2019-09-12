@@ -109,8 +109,9 @@ class Aeon(AbstractAeon):
                     await request.read()
                 except AeonResponse as e:
                     resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
-                await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
-                resp = await self._handle_request(request)
+                else:
+                    await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
+                    resp = await self._handle_request(request)
 
                 if resp is not None:
                     await request.logger.debug('gonna send response')
