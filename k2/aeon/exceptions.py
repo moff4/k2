@@ -8,6 +8,7 @@ class AeonResponse(Exception):
         self.headers = b.get('headers', None)
         self.code = b.get('code', 500)
         self.cookies = b.get('cookies', {})
+        self.close_conn = b.get('close_conn', False)
 
     def __str__(self):
         return f'<AeonResponse: {self.code}>'

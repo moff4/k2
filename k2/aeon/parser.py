@@ -54,7 +54,7 @@ async def parse_data(reader, **kwargs):
     )
     st = st.strip()
     if not st:
-        raise AeonResponse('empty string', code=400)
+        raise AeonResponse('empty string', code=400, close_conn=True)
     tmp = []
     i = 0
     while len(st) > i and st[i] > 32:
@@ -87,7 +87,7 @@ async def parse_data(reader, **kwargs):
         i += 1
     req.http_version = bytes(tmp).decode('utf-8')
     if req.http_version not in cfg.allowed_http_version:
-        raise AeonResponse(f'Unexpected HTTP version: {req.http_version}', code=418)
+        raise AeonResponse(f'Unexpected HTTP version: {req.http_version}', code=418, close_conn=True)
 
     err_413 = AeonResponse(code=413)
     while True:

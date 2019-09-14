@@ -37,6 +37,18 @@ class Aeon(AbstractAeon):
         stats.new(key='ws_connections', type='counter', description='opened ws conenctions')
         stats.new(key='connections', type='counter', description='opened conenctions')
 
+    @staticmethod
+    def ex_to_resp(e):
+        resp = Response(
+            data=e.data,
+            code=e.code,
+            headers=e.headers,
+            cookies=e.cookies,
+        )
+        if e.close_conn:
+            resp.headers['connection'] = 'close'
+        return resp
+
     async def _handle_request(self, request, _run_ware=True):
         try:
             module, args = self.namespace.find_best(request.url)
@@ -65,7 +77,7 @@ class Aeon(AbstractAeon):
                 resp = Response(data=NOT_FOUND, code=404)
 
         except AeonResponse as e:
-            resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
+            resp = self.ex_to_resp(e)
 
         except (RuntimeError, ConnectionResetError):
             request.keep_alive = False
@@ -110,7 +122,7 @@ class Aeon(AbstractAeon):
                 except RuntimeError:
                     pass
                 except AeonResponse as e:
-                    resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
+                    resp = self.ex_to_resp(e)
                 else:
                     await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
                     resp = await self._handle_request(request)
