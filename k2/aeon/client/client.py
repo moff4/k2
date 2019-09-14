@@ -4,6 +4,8 @@ from urllib.parse import urlparse
 
 from .base import BaseHTTPSession
 
+from k2.utils.autocfg import AutoCFG
+
 
 class ClientSession(BaseHTTPSession):
 
@@ -102,6 +104,11 @@ async def _request(method, url, params=None, data=None, json=None, headers=None,
             if url.scheme == 'http' else
             443,
         )
+    )
+    headers = AutoCFG(headers or {}).update_missing(
+        {
+            'Connection': 'close',
+        }
     )
     async with ClientSession(
         host=host,
