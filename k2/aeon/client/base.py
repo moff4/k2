@@ -80,13 +80,10 @@ class BaseHTTPSession:
         )
 
     async def _close(self):
+        await self._wr.drain()
+        self._wr.close()
         self._rd = None
         self._wr = None
-        try:
-            self.rw.close()
-            await self.rw.drain()
-        except Exception:
-            pass
 
     async def _request(self, method, url, params=None, data=None, json=None, headers=None, **kwargs):
         headers = AutoCFG(
