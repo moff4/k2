@@ -44,6 +44,8 @@ async def parse_data(reader, **kwargs):
             'data': b'',
         }
     )
+    if reader.at_eof():
+        raise RuntimeError('socket was closed')
     st = await readln(
         reader,
         max_len=cfg.max_uri_length + 12,
@@ -135,6 +137,8 @@ async def parse_response_data(reader, **kwargs):
         'expected_http_version': {'HTTP/1.1'},
     }
     cfg = AutoCFG(__defaults).update_fields(kwargs)
+    if reader.at_eof():
+        raise ValueError('socket was closed')
     st = (
         await readln(
             reader,

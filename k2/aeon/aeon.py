@@ -107,6 +107,8 @@ class Aeon(AbstractAeon):
                 )
                 try:
                     await request.read()
+                except RuntimeError:
+                    pass
                 except AeonResponse as e:
                     resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
                 else:
