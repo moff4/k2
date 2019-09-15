@@ -131,7 +131,10 @@ class Aeon(AbstractAeon):
                     await request.logger.debug('gonna send response')
                     await request.send(resp)
 
-                keep_alive = request.headers.get('connection', 'keep-alive') != 'close' and request.keep_alive
+                keep_alive = 'close' not in {
+                    request.headers.get('connection', 'keep-alive'),
+                    resp.headers.get('connection', 'keep-alive') if resp else 'keep-alive',
+                } and request.keep_alive
         except Exception as e:
             await self._logger.exception('handler error: {}', e)
         finally:

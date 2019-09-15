@@ -66,7 +66,7 @@ class Request:
         try:
             self.init_from_dict(await parse_data(self._reader, **self.cfg.protocol))
         except UnicodeDecodeError:
-            raise AeonResponse(code=400)
+            raise AeonResponse(code=400, close_conn=True)
 
     def init_from_dict(self, data):
         self._url = data.url
