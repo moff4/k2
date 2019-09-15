@@ -6,11 +6,7 @@ from k2.aeon.parser import parse_data
 from k2.aeon.exceptions import AeonResponse
 from k2.aeon.ws import WSHandler
 from k2.utils.autocfg import AutoCFG
-from k2.utils.http import (
-    is_local_ip,
-    LOG_STRING,
-    LOG_ARGS,
-)
+from k2.utils import http
 import k2.stats.stats as stats
 
 
@@ -136,10 +132,10 @@ class Request:
             res = await resp.export()
             self._writer.write(res)
             total_time = time.time() - self.__start_time
-            f = LOG_STRING
+            f = http.LOG_STRING
             args = dict({
                 k: v(self, resp) if callable(v) else v
-                for k, v in LOG_ARGS.items()
+                for k, v in http.LOG_ARGS.items()
             })
             args.update(
                 {
@@ -188,4 +184,4 @@ class Request:
             return True if IP is private
             like 'localhost' or '192.168.*.*'
         """
-        return is_local_ip(self.ip)
+        return http.is_local_ip(self.ip)
