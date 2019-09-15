@@ -120,7 +120,7 @@ class Aeon(AbstractAeon):
                 try:
                     await request.read()
                 except RuntimeError:
-                    pass
+                    request.keep_alive = False
                 except AeonResponse as e:
                     resp = self.ex_to_resp(e)
                 else:
