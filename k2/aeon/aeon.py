@@ -37,20 +37,6 @@ class Aeon(AbstractAeon):
         stats.new(key='ws_connections', type='counter', description='opened ws conenctions')
         stats.new(key='connections', type='counter', description='opened conenctions')
 
-    @staticmethod
-    def ex_to_resp(e):
-        if e.silent:
-            return
-        resp = Response(
-            data=e.data,
-            code=e.code,
-            headers=e.headers,
-            cookies=e.cookies,
-        )
-        if e.close_conn:
-            resp.headers['connection'] = 'close'
-        return resp
-
     async def _handle_request(self, request, _run_ware=True):
         try:
             module, args = self.namespace.find_best(request.url)
@@ -79,7 +65,7 @@ class Aeon(AbstractAeon):
                 resp = Response(data=NOT_FOUND, code=404)
 
         except AeonResponse as e:
-            resp = self.ex_to_resp(e)
+            resp = e.response
 
         except (RuntimeError, ConnectionResetError):
             request.keep_alive = False
@@ -125,7 +111,7 @@ class Aeon(AbstractAeon):
                 except RuntimeError:
                     request.keep_alive = False
                 except AeonResponse as e:
-                    resp = self.ex_to_resp(e)
+                    resp = e.response
                 else:
                     await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
                     resp = await self._handle_request(request)
@@ -142,8 +128,11 @@ class Aeon(AbstractAeon):
             await self._logger.exception('handler error: {}', e)
         finally:
             await stats.add('connections', -1)
-            await writer.drain()
-            writer.close()
+            try:
+                await writer.drain()
+                writer.close()
+            except ConnectionError:
+                pass
 
     async def emulate_request(
         self,

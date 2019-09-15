@@ -80,8 +80,11 @@ class BaseHTTPSession:
         )
 
     async def _close(self):
-        await self._wr.drain()
-        self._wr.close()
+        try:
+            await self._wr.drain()
+            self._wr.close()
+        except ConnectionError:
+            pass
         self._rd = None
         self._wr = None
 

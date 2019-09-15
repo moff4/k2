@@ -142,7 +142,7 @@ class Request:
             await stats.add(key=f'aeon-{resp.code // 100}xx')
 
             await self._writer.drain()
-        except (BrokenPipeError, IOError) as e:
+        except (BrokenPipeError, IOError, ConnectionError) as e:
             await self.logger.warning(f'pipe error: {e}')
             self.keep_alive = False
         except Exception as e:

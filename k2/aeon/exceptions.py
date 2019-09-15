@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from k2.aeon.responses import Response
+
 
 class AeonResponse(Exception):
     def __init__(self, *a, **b):
@@ -10,6 +12,23 @@ class AeonResponse(Exception):
         self.cookies = b.get('cookies', {})
         self.close_conn = b.get('close_conn', False)
         self.silent = b.get('silent', False)
+        self._resp = None
 
     def __str__(self):
         return f'<AeonResponse: {self.code}>'
+
+    @property
+    def response(self):
+        if self._resp:
+            return self._resp
+        if self.silent:
+            return
+        self._resp = Response(
+            data=self.data,
+            code=self.code,
+            headers=self.headers,
+            cookies=self.cookies,
+        )
+        if self.close_conn:
+            self._resp.headers['connection'] = 'close'
+        return self._resp
