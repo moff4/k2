@@ -154,7 +154,7 @@ class Request:
                 f = ''.join(['({req_id}) ', f])
                 args.update(req_id=self._headers[self.cfg.request_header])
 
-            await self.logger.info(f, *args)
+            await self.logger.info(f, **args)
 
             await stats.add(key=f'aeon-{resp.code // 100}xx')
 
