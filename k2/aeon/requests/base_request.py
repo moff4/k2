@@ -9,6 +9,9 @@ from k2.utils.autocfg import AutoCFG
 from k2.utils.http import is_local_ip
 import k2.stats.stats as stats
 
+LOG_STRING = '{method} {code} {url} {args}, t={time:.4f}'
+LOG_ARGS = {}
+
 
 class Request:
     """
@@ -60,7 +63,7 @@ class Request:
         self._ssl = kwargs.get('ssl', False)
 
     def __del__(self):
-        logger.delete_channel(self.logger.cfg.key)
+        logger.delete_channel(self.logger)
 
     async def read(self):
         try:
@@ -132,10 +135,19 @@ class Request:
             res = await resp.export()
             self._writer.write(res)
             total_time = time.time() - self.__start_time
-            f, args = '{} {} {} {}, t={:.4f}', (self._method, resp.code, self.url, self.args, total_time)
+            f = LOG_STRING
+            args = dict(LOG_ARGS).update(
+                {
+                    'method': self._method,
+                    'code': resp.code,
+                    'url': self.url,
+                    'args': self.args,
+                    'time': total_time,
+                },
+            )
             if self.cfg.request_header in self._headers:
-                f = ''.join(['({}) ', f])
-                args = (self._headers[self.cfg.request_header], *args)
+                f = ''.join(['({req_id}) ', f])
+                args.update(req_id=self._headers[self.cfg.request_header])
 
             await self.logger.info(f, *args)
 

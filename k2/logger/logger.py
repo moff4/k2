@@ -26,7 +26,9 @@ def update_channel(key, **kwargs):
 
 
 def delete_channel(key):
-    Channels.pop(key, None)
+    if isinstance(key, Channel):
+        key = key.cfg.key
+    Channels.pop(key)
 
 
 async def exception(key, msg, *args, **kwargs):

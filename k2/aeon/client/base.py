@@ -70,7 +70,7 @@ class BaseHTTPSession:
     async def __aexit__(self, ex_type, ex_value, traceback):
         await self._close()
         if self._logger:
-            delete_channel(self._logger.cfg.key)
+            delete_channel(self._logger)
         if ex_value:
             raise ex_value
 
