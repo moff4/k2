@@ -64,7 +64,7 @@ async def parse_data(reader, **kwargs):
 
     req.method = bytes(tmp).decode()
     if not req.method:
-        raise AeonResponse('Empty method field', code=400)
+        raise AeonResponse('Empty method field', code=400, close_conn=True, silent=True)
     elif req.method not in cfg.allowed_methods and '*' not in cfg.allowed_methods:
         raise AeonResponse(f'Unexpected method "{req.method}"', code=405)
 
@@ -114,7 +114,7 @@ async def parse_data(reader, **kwargs):
             req.headers[key] = unquote(':'.join(st[1:]).strip())
 
     if os.path.normpath(req.url).startswith('..'):
-        raise AeonResponse(f'Unallowed req: {req.url}', code=400)
+        raise AeonResponse(f'Unallowed req: {req.url}', code=400, close_conn=True)
 
     if 'content-length' in req.headers:
         _len = int(req.headers['content-length'])
