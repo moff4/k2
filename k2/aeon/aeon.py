@@ -39,6 +39,8 @@ class Aeon(AbstractAeon):
 
     @staticmethod
     def ex_to_resp(e):
+        if e.silent:
+            return
         resp = Response(
             data=e.data,
             code=e.code,

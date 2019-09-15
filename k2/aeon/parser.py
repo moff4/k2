@@ -54,7 +54,7 @@ async def parse_data(reader, **kwargs):
     )
     st = st.strip()
     if not st:
-        raise AeonResponse('empty string', code=400, close_conn=True)
+        raise AeonResponse('empty string', code=400, close_conn=True, silent=True)
     tmp = []
     i = 0
     while len(st) > i and st[i] > 32:
