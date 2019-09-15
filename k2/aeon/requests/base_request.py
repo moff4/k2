@@ -6,11 +6,12 @@ from k2.aeon.parser import parse_data
 from k2.aeon.exceptions import AeonResponse
 from k2.aeon.ws import WSHandler
 from k2.utils.autocfg import AutoCFG
-from k2.utils.http import is_local_ip
+from k2.utils.http import (
+    is_local_ip,
+    LOG_STRING,
+    LOG_ARGS,
+)
 import k2.stats.stats as stats
-
-LOG_STRING = '{method} {code} {url} {args}, t={time:.4f}'
-LOG_ARGS = {}
 
 
 class Request:
