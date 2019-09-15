@@ -83,6 +83,7 @@ class Aeon(AbstractAeon):
 
         except (RuntimeError, ConnectionResetError):
             request.keep_alive = False
+            resp = None
 
         except Exception as e:
             await request.logger.exception('aeon-loop ex: {}', e)
