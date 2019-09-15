@@ -137,7 +137,11 @@ class Request:
             self._writer.write(res)
             total_time = time.time() - self.__start_time
             f = LOG_STRING
-            args = dict(LOG_ARGS).update(
+            args = dict({
+                k: v(self, resp) if callable(v) else v
+                for k, v in LOG_ARGS.items()
+            })
+            args.update(
                 {
                     'method': self._method,
                     'code': resp.code,
