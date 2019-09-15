@@ -102,7 +102,7 @@ class Aeon(AbstractAeon):
         keep_alive = True
         addr = writer.get_extra_info('peername')
         await self._logger.debug(_log_extras + f'new connection from {addr[0]}:{addr[1]}')
-        await stats.add('connections')
+        await stats.add('connections', 1)
         try:
             while keep_alive:
                 try:
@@ -133,12 +133,14 @@ class Aeon(AbstractAeon):
 
                 keep_alive = 'close' not in {
                     request.headers.get('connection', 'keep-alive'),
-                    resp.headers.get('connection', 'keep-alive') if resp else 'keep-alive',
+                    resp.headers.get('connection', 'keep-alive') if resp else 'close',
                 } and request.keep_alive
         except Exception as e:
             await self._logger.exception('handler error: {}', e)
         finally:
             await stats.add('connections', -1)
+            await writer.drain()
+            writer.close()
 
     async def emulate_request(
         self,
