@@ -8,7 +8,7 @@ from .channel import Channel
 Channels = {}
 
 
-def new_channel(key, parent=None, inherite_rights={'stdout', 'debug', 'autosave'}, **kwargs):
+def new_channel(key, parent='base_logger', inherite_rights={'stdout', 'debug', 'autosave'}, **kwargs):
     Channels[key] = Channel(key=key, **kwargs)
     if parent is not None:
         Channels[key].add_parent(
