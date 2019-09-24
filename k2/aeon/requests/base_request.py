@@ -103,6 +103,10 @@ class Request:
     def args(self):
         return self._args
 
+    @args.setter
+    def args(self, args):
+        self._args = args
+
     @property
     def method(self):
         return self._method
