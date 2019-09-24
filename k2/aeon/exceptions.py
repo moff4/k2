@@ -6,6 +6,7 @@ from k2.aeon.responses import Response
 class AeonResponse(Exception):
     def __init__(self, *a, **b):
         super().__init__(self, *a)
+        self._msg = a[0] if a else '-'
         self.data = b.get('data', '')
         self.headers = b.get('headers', None)
         self.code = b.get('code', 500)
@@ -15,7 +16,10 @@ class AeonResponse(Exception):
         self._resp = None
 
     def __str__(self):
-        return f'<AeonResponse: {self.code}>'
+        return '<AeonResponse [{code}] {msg}>'.format(
+            msg=self._msg,
+            code=self.code,
+        )
 
     @property
     def response(self):

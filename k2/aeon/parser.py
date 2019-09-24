@@ -100,6 +100,8 @@ async def parse_data(reader, **kwargs):
             break
 
         st = st.decode('utf-8').split(':')
+        if len(st) < 2:
+            raise AeonResponse('Http parse error', code=400)
         key = st[0].lower()
         if len(req.headers) >= cfg.max_header_count:
             raise AeonResponse('Too many headers', code=400)
