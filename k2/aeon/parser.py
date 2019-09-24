@@ -44,6 +44,8 @@ async def parse_data(reader, **kwargs):
             'data': b'',
         }
     )
+    if reader.at_eof():
+        raise RuntimeError('socket was closed')
     st = await readln(
         reader,
         max_len=cfg.max_uri_length + 12,
@@ -52,7 +54,7 @@ async def parse_data(reader, **kwargs):
     )
     st = st.strip()
     if not st:
-        raise AeonResponse('empty string', code=400)
+        raise AeonResponse('empty string', code=400, close_conn=True, silent=True)
     tmp = []
     i = 0
     while len(st) > i and st[i] > 32:
@@ -62,7 +64,7 @@ async def parse_data(reader, **kwargs):
 
     req.method = bytes(tmp).decode()
     if not req.method:
-        raise AeonResponse('Empty method field', code=400)
+        raise AeonResponse('Empty method field', code=400, close_conn=True, silent=True)
     elif req.method not in cfg.allowed_methods and '*' not in cfg.allowed_methods:
         raise AeonResponse(f'Unexpected method "{req.method}"', code=405)
 
@@ -85,7 +87,7 @@ async def parse_data(reader, **kwargs):
         i += 1
     req.http_version = bytes(tmp).decode('utf-8')
     if req.http_version not in cfg.allowed_http_version:
-        raise AeonResponse(f'Unexpected HTTP version: {req.http_version}', code=418)
+        raise AeonResponse(f'Unexpected HTTP version: {req.http_version}', code=418, close_conn=True)
 
     err_413 = AeonResponse(code=413)
     while True:
@@ -112,7 +114,7 @@ async def parse_data(reader, **kwargs):
             req.headers[key] = unquote(':'.join(st[1:]).strip())
 
     if os.path.normpath(req.url).startswith('..'):
-        raise AeonResponse(f'Unallowed req: {req.url}', code=400)
+        raise AeonResponse(f'Unallowed req: {req.url}', code=400, close_conn=True)
 
     if 'content-length' in req.headers:
         _len = int(req.headers['content-length'])
@@ -135,6 +137,8 @@ async def parse_response_data(reader, **kwargs):
         'expected_http_version': {'HTTP/1.1'},
     }
     cfg = AutoCFG(__defaults).update_fields(kwargs)
+    if reader.at_eof():
+        raise ValueError('socket was closed')
     st = (
         await readln(
             reader,

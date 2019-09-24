@@ -187,6 +187,10 @@ MAX_URI_LENGTH = 256
 MAX_STATUS_LENGTH = 256
 
 
+LOG_STRING = '{method} {code} {url} {args}, t={time:.4f}'
+LOG_ARGS = {}
+
+
 async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
     st = []
     a = True

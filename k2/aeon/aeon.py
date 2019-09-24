@@ -65,10 +65,11 @@ class Aeon(AbstractAeon):
                 resp = Response(data=NOT_FOUND, code=404)
 
         except AeonResponse as e:
-            resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
+            resp = e.response
 
         except (RuntimeError, ConnectionResetError):
             request.keep_alive = False
+            resp = None
 
         except Exception as e:
             await request.logger.exception('aeon-loop ex: {}', e)
@@ -90,7 +91,7 @@ class Aeon(AbstractAeon):
         keep_alive = True
         addr = writer.get_extra_info('peername')
         await self._logger.debug(_log_extras + f'new connection from {addr[0]}:{addr[1]}')
-        await stats.add('connections')
+        await stats.add('connections', 1)
         try:
             while keep_alive:
                 try:
@@ -107,20 +108,31 @@ class Aeon(AbstractAeon):
                 )
                 try:
                     await request.read()
+                except RuntimeError:
+                    request.keep_alive = False
                 except AeonResponse as e:
-                    resp = Response(data=e.data, code=e.code, headers=e.headers, cookies=e.cookies)
-                await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
-                resp = await self._handle_request(request)
+                    resp = e.response
+                else:
+                    await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
+                    resp = await self._handle_request(request)
 
                 if resp is not None:
                     await request.logger.debug('gonna send response')
                     await request.send(resp)
 
-                keep_alive = request.headers.get('connection', 'keep-alive') != 'close' and request.keep_alive
+                keep_alive = 'close' not in {
+                    request.headers.get('connection', 'keep-alive'),
+                    resp.headers.get('connection', 'keep-alive') if resp else 'close',
+                } and request.keep_alive
         except Exception as e:
             await self._logger.exception('handler error: {}', e)
         finally:
             await stats.add('connections', -1)
+            try:
+                await writer.drain()
+                writer.close()
+            except ConnectionError:
+                pass
 
     async def emulate_request(
         self,

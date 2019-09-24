@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+import time
 
 import k2.logger as logger
 from k2.aeon.parser import parse_data
 from k2.aeon.exceptions import AeonResponse
 from k2.aeon.ws import WSHandler
 from k2.utils.autocfg import AutoCFG
-from k2.utils.http import is_local_ip
+from k2.utils import http
 import k2.stats.stats as stats
 
 
@@ -38,6 +39,7 @@ class Request:
     postware = []
 
     def __init__(self, addr, reader, writer, **kwargs):
+        self.__start_time = time.time()
         self._initialized = False
         self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
         self.logger = logger.new_channel(f'{addr[0]}:{addr[1]}', parent='aeon')
@@ -58,13 +60,13 @@ class Request:
         self._ssl = kwargs.get('ssl', False)
 
     def __del__(self):
-        logger.delete_channel(self.logger.cfg.key)
+        logger.delete_channel(self.logger)
 
     async def read(self):
         try:
             self.init_from_dict(await parse_data(self._reader, **self.cfg.protocol))
         except UnicodeDecodeError:
-            raise AeonResponse(code=400)
+            raise AeonResponse(code=400, close_conn=True)
 
     def init_from_dict(self, data):
         self._url = data.url
@@ -129,18 +131,31 @@ class Request:
         try:
             res = await resp.export()
             self._writer.write(res)
-
-            f, args = '{} {} {} {}', (self._method, resp.code, self.url, self.args)
+            total_time = time.time() - self.__start_time
+            f = http.LOG_STRING
+            args = dict({
+                k: v(self, resp) if callable(v) else v
+                for k, v in http.LOG_ARGS.items()
+            })
+            args.update(
+                {
+                    'method': self._method,
+                    'code': resp.code,
+                    'url': self.url,
+                    'args': self.args,
+                    'time': total_time,
+                },
+            )
             if self.cfg.request_header in self._headers:
-                f = ''.join(['({}) ', f])
-                args = (self._headers[self.cfg.request_header], *args)
+                f = ''.join(['({req_id}) ', f])
+                args.update(req_id=self._headers[self.cfg.request_header])
 
-            await self.logger.info(f, *args)
+            await self.logger.info(f, **args)
 
             await stats.add(key=f'aeon-{resp.code // 100}xx')
 
             await self._writer.drain()
-        except (BrokenPipeError, IOError) as e:
+        except (BrokenPipeError, IOError, ConnectionError) as e:
             await self.logger.warning(f'pipe error: {e}')
             self.keep_alive = False
         except Exception as e:
@@ -169,4 +184,4 @@ class Request:
             return True if IP is private
             like 'localhost' or '192.168.*.*'
         """
-        return is_local_ip(self.ip)
+        return http.is_local_ip(self.ip)

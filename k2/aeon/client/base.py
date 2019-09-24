@@ -70,7 +70,7 @@ class BaseHTTPSession:
     async def __aexit__(self, ex_type, ex_value, traceback):
         await self._close()
         if self._logger:
-            delete_channel(self._logger.cfg.key)
+            delete_channel(self._logger)
         if ex_value:
             raise ex_value
 
@@ -80,13 +80,13 @@ class BaseHTTPSession:
         )
 
     async def _close(self):
+        try:
+            await self._wr.drain()
+            self._wr.close()
+        except ConnectionError:
+            pass
         self._rd = None
         self._wr = None
-        try:
-            self.rw.close()
-            await self.rw.drain()
-        except Exception:
-            pass
 
     async def _request(self, method, url, params=None, data=None, json=None, headers=None, **kwargs):
         headers = AutoCFG(

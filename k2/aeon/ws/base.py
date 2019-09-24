@@ -212,7 +212,7 @@ class BaseWSHandler:
         try:
             self.wfile.write(header + payload)
             await self.wfile.drain()
-        except Exception as e:
+        except ConnectionError as e:
             await self.req.logger.debug(f'[{self.req.ip}:{self.req.port}] send: {e}')
             self.keep_alive = False
 
