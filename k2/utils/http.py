@@ -241,3 +241,28 @@ async def run_ware(ware, *a, **b):
         await ware(*a, **b)
     else:
         ware(*a, **b)
+
+
+def __request_set_args(request, args):
+    setattr(request, 'args', args)
+
+
+def __request_set_data(request, data):
+    setattr(request, 'data', data)
+
+
+REST_DEFAULT_GETTERS = {
+    'GET': lambda request: request.args,
+    'HEAD': lambda request: request.args,
+    'POST': lambda request: request.data,
+    'PUT': lambda request: request.data,
+    'DELETE': lambda request: request.data,
+}
+
+REST_DEFAULT_SETTERS = {
+    'GET': __request_set_args,
+    'HEAD': __request_set_args,
+    'POST': __request_set_data,
+    'PUT': __request_set_data,
+    'DELETE': __request_set_data,
+}

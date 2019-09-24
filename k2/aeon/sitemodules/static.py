@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 
-from k2.aeon.exceptions import AeonResponse
 from k2.aeon.responses import (
     Response,
     StaticResponse,
