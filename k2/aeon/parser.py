@@ -154,13 +154,15 @@ async def parse_response_data(reader, **kwargs):
 
     version, code, *_ = st.split(' ')
 
-    if version not in {'HTTP/1.1', 'HTTP/1.0', 'HTTP/0.9'}:
-        raise ValueError(f'unsupported protocol version "{version}"')
+    if version not in cfg.expected_http_version:
+        raise ValueError('unsupported protocol version "{}"'.format(version))
 
     if not code.isdigit():
-        raise ValueError(f'status code is not integer "{code}"')
+        raise ValueError('status code is not integer "{}"'.format(code))
 
     code = int(code)
+    if not (100 <= code < 600):
+        raise ValueError('Invalid status code')
     headers = AutoCFG(key_modifier=lambda x: x.lower())
 
     for i in range(cfg.max_header_count):
@@ -172,6 +174,8 @@ async def parse_response_data(reader, **kwargs):
             break
 
         key, *value = st.split(':')
+        if not value:
+            raise ValueError('Invalid headers format')
         key = key.lower()
         value = unquote(':'.join(value).strip())
         if key in headers:
@@ -191,7 +195,7 @@ async def parse_response_data(reader, **kwargs):
     if 'content-length' in headers:
         content_length = int(headers['content-length'])
         if cfg.max_data_length < content_length:
-            raise ValueError(f'Got unexpectedly much data: {content_length} bytes')
+            raise ValueError('Got unexpectedly much data: {} bytes'.format(content_length))
         step = 2 ** 14
         loaded = 0
         _l = content_length - loaded

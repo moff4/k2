@@ -2,7 +2,10 @@ import asyncio
 import unittest
 
 from k2.aeon.exceptions import AeonResponse
-from k2.aeon.parser import parse_data
+from k2.aeon.parser import (
+    parse_data,
+    parse_response_data,
+)
 
 LOOP = asyncio.get_event_loop()
 
@@ -27,7 +30,194 @@ class Reader:
         return data
 
 
-class TestParser(unittest.TestCase):
+class TestClientParser(unittest.TestCase):
+    def do_test(self, data, error=False, **kwargs):
+        try:
+            return LOOP.run_until_complete(parse_response_data(Reader(data), **kwargs))
+        except ValueError:
+            self.assertTrue(error)
+
+    def test_ok_1(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 204 OK',
+                    r'Server:    nginx',
+                    r'x-a: %41%20%42',
+                    r'x-csrf:token',
+                    r'X-AbCdEf: QwErTy',
+                    r'',
+                ]
+            )
+        )
+        self.assertNotEqual(result, None)
+        self.assertEqual(result.code, 204)
+        self.assertTrue(result.ok)
+        self.assertEqual(result.headers, {'server': 'nginx', 'x-a': 'A B', 'x-abcdef': 'QwErTy', 'x-csrf': 'token'})
+        self.assertEqual(result.http_version, 'HTTP/1.1')
+
+    def test_ok_2(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 204 OK',
+                    r'Server:    nginx',
+                    r'x-a: %41%20%42',
+                    r'x-csrf:token',
+                    r'X-AbCdEf: QwErTy',
+                    r'Content-Length: 11',
+                    r'',
+                    r'ABCDEFGHIJK'
+                    r'',
+                ]
+            )
+        )
+        self.assertNotEqual(result, None)
+        self.assertEqual(result.code, 204)
+        self.assertTrue(result.ok)
+        self.assertEqual(
+            result.headers,
+            {
+                'server': 'nginx',
+                'x-a': 'A B',
+                'x-abcdef': 'QwErTy',
+                'x-csrf': 'token',
+                'content-length': '11',
+            },
+        )
+        self.assertEqual(result.data, rb'ABCDEFGHIJK')
+        self.assertEqual(result.http_version, 'HTTP/1.1')
+
+    def test_fail_1(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.2 200 OK',
+                    r'Server: nginx',
+                    r'',
+                ]
+            ),
+            error=True,
+        )
+        self.assertEqual(result, None)
+
+    def test_fail_2(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 100500 OK',
+                    r'Server: nginx',
+                    r'',
+                ]
+            ),
+            error=True,
+        )
+        self.assertEqual(result, None)
+
+    def test_fail_3(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 200 OK',
+                    r'Server nginx',
+                    r'',
+                ]
+            ),
+            error=True,
+        )
+        self.assertEqual(result, None)
+
+    def test_fail_4(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 None',
+                    r'Server nginx',
+                    r'',
+                ]
+            ),
+            error=True,
+        )
+        self.assertEqual(result, None)
+
+    def test_fail_max_header_count(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 200 Ok',
+                    r'Server: nginx',
+                    r'x-a: ok',
+                    r'x-b: ok',
+                    r'x-c: too many headers',
+                    r'',
+                ]
+            ),
+            error=True,
+            max_header_count=3,
+        )
+        self.assertEqual(result, None)
+
+    def test_fail_max_header_length(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 200 ok',
+                    r'Server: nginx',
+                    r'x-a:  abcdef',
+                ]
+            ),
+            error=True,
+            max_header_length=10,
+        )
+        self.assertEqual(result, None)
+
+    def test_fail_max_data_length(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 200 ok',
+                    r'Server: nginx',
+                    r'Content-Length: 11',
+                    r'',
+                    r'ABCDEFGHIJK'
+                    r'',
+                ]
+            ),
+            error=True,
+            max_data_length=10,
+        )
+        self.assertEqual(result, None)
+
+    def test_fail_max_status_length(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 200 ok',
+                    r'Server: nginx',
+                    r'',
+                ]
+            ),
+            error=True,
+            max_status_length=14,
+        )
+        self.assertEqual(result, None)
+
+    def test_fail_expected_http_version(self):
+        result = self.do_test(
+            data='\r\n'.join(
+                [
+                    r'HTTP/1.1 200 ok',
+                    r'Server: nginx',
+                    r'',
+                ]
+            ),
+            error=True,
+            expected_http_version=set(),
+        )
+        self.assertEqual(result, None)
+
+
+class TestServerParser(unittest.TestCase):
     def do_test(self, data, result, error=True, code=None, **kwargs):
         try:
             data = LOOP.run_until_complete(parse_data(Reader(data), **kwargs))
