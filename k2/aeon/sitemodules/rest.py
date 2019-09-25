@@ -31,9 +31,9 @@ class RestSM(SiteModule):
         if deserializer is None:
             return
         data = getter(request)
-        if isinstance(data, (str, bytes)):
-            data = deserializer(data)
         try:
+            if isinstance(data, (str, bytes)):
+                data = deserializer(data)
             data = apply(data, schema)
         except ValueError:
             raise AeonResponse(code=400, data='invalid schema')

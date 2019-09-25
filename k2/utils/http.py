@@ -244,11 +244,11 @@ async def run_ware(ware, *a, **b):
 
 
 def __request_set_args(request, args):
-    setattr(request, 'args', args)
+    request.args = args
 
 
 def __request_set_data(request, data):
-    setattr(request, 'data', data)
+    request.data = data
 
 
 REST_DEFAULT_GETTERS = {

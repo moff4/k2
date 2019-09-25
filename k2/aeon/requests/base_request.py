@@ -123,6 +123,10 @@ class Request:
     def data(self):
         return self._data
 
+    @data.setter
+    def data(self, data):
+        self._data = data
+
     @property
     def ip(self):
         return self._real_ip
