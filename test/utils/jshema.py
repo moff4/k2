@@ -45,6 +45,16 @@ class TestJschema(unittest.TestCase):
             obj,
             {
                 'type': dict,
+            },
+            obj,
+        )
+
+    def test_dict(self):
+        obj = {'1': 2, 'abc': 'cde'}
+        self.do_test(
+            obj,
+            {
+                'type': dict,
                 'value': {
                     '1': {'type': int},
                     'abc': {'type': str}
@@ -54,6 +64,16 @@ class TestJschema(unittest.TestCase):
         )
 
     def test_simple_list(self):
+        obj = ['1', 2, 'abc', 'cde']
+        self.do_test(
+            obj,
+            {
+                'type': list,
+            },
+            obj,
+        )
+
+    def test_list(self):
         obj = ['1', '2', 'abc', 'cde']
         self.do_test(
             obj,
@@ -198,3 +218,63 @@ class TestJschema(unittest.TestCase):
             'min_length': 10,
         }
         self.do_test('A' * 9, schema, 'A' * 9, False)
+
+    def test_unexpected_ok(self):
+        schema = {
+            'type': dict,
+            'value': {
+                '1': {
+                    'type': int,
+                },
+            },
+            'unexpected': True,
+        }
+        obj = {
+            '1': 2,
+            'abc': 'def',
+        }
+        self.do_test(obj, schema, obj, True)
+
+    def test_unexpected_error(self):
+        schema = {
+            'type': dict,
+            'value': {
+                '1': {
+                    'type': int,
+                },
+            },
+            'unexpected': False,
+        }
+        obj = {
+            '1': 2,
+            'abc': 'def',
+        }
+        self.do_test(obj, schema, obj, False)
+
+    def test_anykey_ok(self):
+        schema = {
+            'type': dict,
+            'anykey': {
+                'type': int,
+            },
+            'unexpected': True,
+        }
+        obj = {
+            '1': 2,
+            'abc': 3,
+        }
+        self.do_test(obj, schema, obj, True)
+
+    def test_anykey_error(self):
+        schema = {
+            'type': dict,
+            'anykey': {
+                'type': int,
+            },
+            'unexpected': True,
+        }
+        obj = {
+            '1': 2,
+            'abc': '3',
+        }
+        self.do_test(obj, schema, obj, False)
