@@ -19,14 +19,22 @@ stat-name => {
 """
 Collection = {}
 
+STATS_TYPE_COUNTER = Counter._type
+STATS_TYPE_SINGLE = Single._type
+STATS_TYPE_AVERAGE = Average._type
+STATS_TYPE_TIMEEVENTS = TimeEvents._type
+STATS_TYPE_TIMEAVERAGE = TimeAverage._type
+STATS_TYPE_EVENTCOUNTER = EventCounter._type
+STATS_TYPE_TIMEEVENTCOUNTER = TimeEventCounter._type
+
 TypeMap = {
-    'counter': Counter,
-    'single': Single,
-    'average': Average,
-    'time_events': TimeEvents,
-    'time_average': TimeAverage,
-    'event_counter': EventCounter,
-    'time_event_counter': TimeEventCounter,
+    STATS_TYPE_COUNTER: Counter,
+    STATS_TYPE_SINGLE: Single,
+    STATS_TYPE_AVERAGE: Average,
+    STATS_TYPE_TIMEEVENTS: TimeEvents,
+    STATS_TYPE_TIMEAVERAGE: TimeAverage,
+    STATS_TYPE_EVENTCOUNTER: EventCounter,
+    STATS_TYPE_TIMEEVENTCOUNTER: TimeEventCounter,
 }
 
 

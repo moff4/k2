@@ -14,7 +14,7 @@ class Counter(AbstractStat):
         self._default = default
 
     def add(self, value=1.0):
-        self._value = value
+        self._value += value
 
     def reset(self):
         self._value = self._default
