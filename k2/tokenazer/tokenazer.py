@@ -41,7 +41,8 @@ class Tokenazer:
                 'type': int
             },
             'uid': {
-                'type': int,
+                'pre_call': str,
+                'type': str,
             },
             'exp': {
                 'type': int,

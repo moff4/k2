@@ -11,10 +11,12 @@ Channels = {}
 def new_channel(key, parent='base_logger', inherite_rights={'stdout', 'debug', 'autosave'}, **kwargs):
     Channels[key] = Channel(key=key, **kwargs)
     if parent is not None:
-        Channels[key].add_parent(
-            parent=parent if isinstance(parent, Channel) else Channels[parent],
-            inherite_rights=inherite_rights
-        )
+        parent = parent if isinstance(parent, Channel) else Channels[parent]
+        if key != parent.cfg.key:
+            Channels[key].add_parent(
+                parent=parent,
+                inherite_rights=inherite_rights
+            )
     return Channels[key]
 
 
