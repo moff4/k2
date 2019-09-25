@@ -5,7 +5,7 @@ from k2.aeon.responses import (
     Response,
     StaticResponse,
 )
-from k2.aeon.sitemodules.base import SiteModule
+from k2.aeon.sitemodules.sm import SiteModule
 
 
 class StaticSiteModule(SiteModule):

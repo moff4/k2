@@ -1,4 +1,6 @@
 
 from .sm import TestSM
-from .restsm import TestRestSM
 from .parser import TestParser
+from .restsm import TestRestSM
+from .authsm import TestAuthSM
+from .authrestsm import TestAuthRestSM

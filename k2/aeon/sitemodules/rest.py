@@ -7,7 +7,7 @@ except ImportError:
 
 from k2.aeon.exceptions import AeonResponse
 from k2.aeon.responses import Response
-from k2.aeon.sitemodules.base import SiteModule
+from k2.aeon.sitemodules.sm import SiteModule
 from k2.utils.jschema import apply
 from k2.utils.http import (
     REST_DEFAULT_GETTERS,

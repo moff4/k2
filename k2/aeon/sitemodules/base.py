@@ -6,7 +6,7 @@ from k2.aeon.responses import Response
 from k2.utils.http import NOT_FOUND
 
 
-class SiteModule:
+class BaseSiteModule:
 
     async def handle(self, request, **args):
         f_name = request.method.lower()

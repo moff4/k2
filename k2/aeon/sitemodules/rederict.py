@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-from k2.aeon.sitemodules.base import SiteModule
+from k2.aeon.sitemodules.base import BaseSiteModule
 from k2.aeon.responses import Response
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import HTTP_METHODS
 
 
-class Rederict(SiteModule):
+class Rederict(BaseSiteModule):
     def __init__(self, location=None, code=302, headers=None, methods=None, url_modifier=None):
         if not location and not url_modifier:
             raise ValueError('must be passed "location" or "url_modifier"')

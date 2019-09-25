@@ -4,7 +4,7 @@ from k2.aeon.abstract_aeon import AbstractAeon
 from k2.aeon.requests import Request
 from k2.aeon.responses import Response
 from k2.aeon.exceptions import AeonResponse
-from k2.aeon.sitemodules.base import SiteModule
+from k2.aeon.sitemodules.base import BaseSiteModule
 from k2.aeon.ws import WSHandler
 from k2.aeon.namespace import NameSpace
 from k2.utils.autocfg import AutoCFG
@@ -52,7 +52,7 @@ class Aeon(AbstractAeon):
                 else:
                     resp = Response(data=NOT_FOUND, code=404)
 
-            elif isinstance(module, SiteModule):
+            elif isinstance(module, BaseSiteModule):
                 await request.logger.debug('found module: {}', module)
                 if _run_ware:
                     for ware in self.middleware:
