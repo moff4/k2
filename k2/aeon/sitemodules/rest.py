@@ -17,7 +17,7 @@ from k2.utils.http import (
 
 class RestSM(SiteModule):
 
-    def __check_schema(self, request):
+    async def __check_schema(self, request):
         schema = getattr(self, '%s_schema' % request.method, None)
         if schema is None:
             return
@@ -41,7 +41,7 @@ class RestSM(SiteModule):
         setter(request, data)
 
     async def handle(self, request, **args):
-        self.__check_schema(request)
+        await self.__check_schema(request)
         res = await super().handle(request, **args)
         if not isinstance(res, Response):
             serializer = (
