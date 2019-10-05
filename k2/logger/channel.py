@@ -117,12 +117,21 @@ class Channel:
             ]
         )
 
+    @staticmethod
+    def __form_msg_(msg, *a, **b):
+        if isinstance(msg, str):
+            return msg.format(*a, **b)
+        else:
+            return ', '.join(
+                [
+                    str(i)
+                    for i in [msg] + list(a) + list(b.items())
+                ]
+            )
+
     async def exception(self, msg, *args, **kwargs):
         az = [
-            msg.format(
-                *args,
-                **kwargs
-            ),
+            self.__form_msg_(msg, *args, **kwargs),
             '\n',
         ]
         az.extend(traceback.format_exception(*sys.exc_info()))
@@ -134,7 +143,7 @@ class Channel:
 
     async def error(self, msg, *args, **kwargs):
         await self.log(
-            msg=msg.format(*args, **kwargs),
+            msg=self.__form_msg_(msg, *args, **kwargs),
             level='error',
             args=args,
             kwargs=kwargs,
@@ -142,7 +151,7 @@ class Channel:
 
     async def warning(self, msg, *args, **kwargs):
         await self.log(
-            msg=msg.format(*args, **kwargs),
+            msg=self.__form_msg_(msg, *args, **kwargs),
             level='warning',
             args=args,
             kwargs=kwargs,
@@ -150,7 +159,7 @@ class Channel:
 
     async def info(self, msg, *args, **kwargs):
         await self.log(
-            msg=msg.format(*args, **kwargs),
+            msg=self.__form_msg_(msg, *args, **kwargs),
             level='info',
             args=args,
             kwargs=kwargs,
@@ -158,7 +167,7 @@ class Channel:
 
     async def debug(self, msg, *args, **kwargs):
         await self.log(
-            msg=msg.format(*args, **kwargs),
+            msg=self.__form_msg_(msg, *args, **kwargs),
             level='debug',
             args=args,
             kwargs=kwargs,

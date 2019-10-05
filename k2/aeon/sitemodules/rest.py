@@ -35,7 +35,8 @@ class RestSM(SiteModule):
             if isinstance(data, (str, bytes)):
                 data = deserializer(data)
             data = apply(data, schema)
-        except ValueError:
+        except ValueError as e:
+            await request.logger.warning(str(e))
             raise AeonResponse(code=400, data='invalid schema')
         setter(request, data)
 
