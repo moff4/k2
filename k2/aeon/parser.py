@@ -122,7 +122,15 @@ async def parse_data(reader, **kwargs):
         _len = int(req.headers['content-length'])
         if _len >= cfg.max_data_length:
             raise AeonResponse('Too much data', code=413)
-        req.data = await reader.read(_len)
+        buff = []
+        length = 0
+        i = 0
+        while length < _len and i < 100:
+            buff.append(await reader.read(_len - length))
+            length += len(buff[-1])
+        if length < _len:
+            raise AeonResponse('read data %s out of %s' % (length, _len), code=500)
+        req.data = b''.join(buff)
     return req
 
 
