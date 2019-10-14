@@ -31,7 +31,7 @@ class Coder:
             tuple: lambda x, *a, **b: self._list(list(x), *a, **b),
             dict: self._map,
             bool: self._bool,
-            type(None): lambda *a, **b: self._none,
+            type(None): lambda *a, **b: self._none(),
         }
 
     def _gen_type(self, t):
@@ -71,9 +71,12 @@ class Coder:
         while a != round(a):
             a *= 10
             c += 1
-        st = self._int(int(a), just=True) + self._int(int(c), just=True)
+        st = self._int(int(a), just=True)
+        st.extend(self._int(int(c), just=True))
         if not just:
-            st.insert(0, self._gen_type(FLOAT_NEG if sign else FLOAT_POS))
+            tmp = self._gen_type(FLOAT_NEG if sign else FLOAT_POS)
+            tmp.extend(st)
+            st = tmp
         return st
 
     def _bytes(self, data, string=False, just=False):
@@ -105,25 +108,9 @@ class Coder:
             list
         """
         st = [] if just else self._gen_type(LIST)
-        st.extend(
-            [
-                i
-                for i in (
-                    (
-                        [
-                            self._type(i)
-                            for i in data
-                        ] + [
-                            self._none()
-                        ]
-                    )
-                    if data else
-                    [
-                        self._none()
-                    ]
-                )
-            ]
-        )
+        for i in data:
+            st.extend(self._type(i))
+        st.extend(self._none())
         return st
 
     def _map(self, data, just=False):
