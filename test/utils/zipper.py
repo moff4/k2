@@ -8,7 +8,7 @@ from k2.utils.zipper import (
 )
 
 
-class AbstractArt(unittest.TestCase):
+class TestZipper(unittest.TestCase):
 
     def do_test(self, x, y, opt1=None, opt2=None, max_arch_size=175 * 2 ** 20, parts_num=None, expect=False):
         opt1 = opt1 or {}
@@ -159,3 +159,19 @@ class AbstractArt(unittest.TestCase):
             max_arch_size=2 ** 14,
             parts_num=2,
         )
+
+    def test_arch_info(self):
+        opt = {'art_mask': os.urandom(9)}
+        fn1 = b'./f1.txt'
+        fn2 = b'./2/f2.txt'
+        arch = compress(
+            files=[
+                (fn1, b'0123456789' * 2 ** 10),
+                (fn2, b'QwErTy' * 2 ** 10),
+            ],
+            options=opt,
+        )
+        self.assertEqual(len(arch), 1)
+        info = arch_info(arch, opt)
+        self.assertEqual(len(info), 2)
+        self.assertEqual(info, [(0, fn1), (1, fn2)])
