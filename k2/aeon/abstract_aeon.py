@@ -31,6 +31,7 @@ class AbstractAeon:
         'ssl_handshake_timeout': None,
         'start_serving': True,
         'site_dir': './var/',
+        'logger': {},
     }
 
     def __init__(self, **kwargs):
@@ -60,7 +61,9 @@ class AbstractAeon:
         self._logger = logger.new_channel(
             key='aeon',
             parent=logger.get_channel('base_logger'),
+            **self.cfg.logger,
         )
+        self.running_tasks = []
 
     def servername_callback(self, sock, req_hostname, cb_context, as_callback=True):
         """
@@ -138,9 +141,9 @@ class AbstractAeon:
 
     def run(self):
         ports = f'{self.cfg.port}, {self.cfg.https_port}' if self.cfg.use_ssl else self.cfg.port
-        tasks = []
+        self.running_tasks = []
         try:
-            tasks = [
+            self.running_tasks = [
                 asyncio.ensure_future(
                     self._logger.info(
                         'server started on {}',
@@ -149,7 +152,7 @@ class AbstractAeon:
                 )
             ]
 
-            tasks.extend(
+            self.running_tasks.extend(
                 asyncio.ensure_future(task)
                 for task in self.tasks
             )
@@ -157,7 +160,7 @@ class AbstractAeon:
         except KeyboardInterrupt:
             pass
         finally:
-            for task in tasks:
+            for task in self.running_tasks:
                 task.cancel()
             self.cfg.loop.run_until_complete(
                 asyncio.ensure_future(
