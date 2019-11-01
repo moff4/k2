@@ -1,6 +1,6 @@
 # K2
 
-[![Build Status](https://travis-ci.com/moff4/k2.svg?branch=dev)](https://travis-ci.com/moff4/k2)
+[![Build Status](https://travis-ci.com/moff4/k2.svg?branch=master)](https://travis-ci.com/moff4/k2)
 
 Библиотека для удобной организации архитектуры небольших программ.  
 
