@@ -1,3 +1,4 @@
+import json
 import asyncio
 import unittest
 
@@ -61,7 +62,7 @@ class TestAuthRestSM(unittest.TestCase):
                 'user_id': '123',
             }
         )
-        self.assertEqual(resp.data, '{"response": "123"}')
+        self.assertEqual(json.loads(resp.data), {'response': '123'})
 
     def test_auth_fail(self):
         self.request(

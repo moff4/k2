@@ -107,9 +107,6 @@ def decompress(archs: list, options: dict) -> list:
             if p.fid not in map_fid_name:
                 raise ValueError('unknown fid "%s"' % p.fid)
             fp[map_fid_name[p.fid]].append(p)
-    for filename, parts in fp.items():
-        if any((parts[0].count != p.count) for p in parts) or len(parts) != parts[0].count:
-            raise ValueError('idx error with "%s"' % filename)
     return [
         (
             filename,
