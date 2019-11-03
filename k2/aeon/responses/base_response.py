@@ -62,7 +62,7 @@ class Response:
         return self._http_version
 
     @property
-    def data(self) -> bytes:
+    def data(self):
         return self._data
 
     @property
@@ -74,8 +74,8 @@ class Response:
         return self._headers
 
     @data.setter
-    def data(self, data):
-        self._data = b'' if data is None else (data.encode() if isinstance(data, str) else data)
+    def data(self, d):
+        self._data = b'' if d is None else (d.encode() if isinstance(d, str) else d)
 
     def add_headers(self, *args, **kwargs):
         if any([not isinstance(i, (dict, tuple)) for i in args]):
@@ -86,7 +86,7 @@ class Response:
 
         self._headers.update(*args, **kwargs)
 
-    def add_cookie(self, name, value, *options, **kwoptions):
+    def add_cookie(self, name: str, value: str, *options, **kwoptions):
         """
             name - cookie name
             value - value of cookie
@@ -99,7 +99,7 @@ class Response:
             'properties': AutoCFG(kwoptions)
         }
 
-    async def export(self) -> str:
+    async def export(self) -> bytes:
         data = await self._extra_prepare_data()
         data = data.encode() if isinstance(data, str) else data
         data = await self._cache_n_zip(data)

@@ -4,12 +4,15 @@ import sys
 import time
 import asyncio
 import traceback
-
-from multiprocessing import Lock
+from typing import Dict, Tuple, Any, Callable
+from multiprocessing import (
+    Lock,
+    synchronize,
+)
 
 from k2.utils.autocfg import AutoCFG
 
-Locks = {}
+Locks = {}  # type: Dict[str, synchronize.Lock]
 
 
 class Channel:
@@ -65,10 +68,18 @@ class Channel:
         if 'log_levels' in inherite_rights:
             self.cfg.log_levels.update(self.parent.cfg.log_levels)
 
-    async def log(self, msg, level, args=None, kwargs=None, from_child=False, exception=False):
+    async def log(
+        self,
+        msg: str,
+        level: str,
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+        from_child: bool=False,
+        exception: bool=False,
+    ):
         if level not in self.cfg.log_levels:
             return
-        args = args or []
+        args = args or tuple()
         kwargs = kwargs or {}
         timestamp = time.time()
         log_msg = self.cfg.log_format.format(
@@ -118,7 +129,7 @@ class Channel:
         )
 
     @staticmethod
-    def __form_msg_(msg, *a, **b):
+    def __form_msg_(msg: str, *a, **b):
         if isinstance(msg, str):
             return msg.format(*a, **b)
         else:
@@ -129,7 +140,7 @@ class Channel:
                 ]
             )
 
-    async def exception(self, msg, *args, **kwargs):
+    async def exception(self, msg: str, *args, **kwargs):
         az = [
             self.__form_msg_(msg, *args, **kwargs),
             '\n',
@@ -139,9 +150,11 @@ class Channel:
             msg=''.join(az),
             level=kwargs.get('level', 'error'),
             exception=True,
+            args=args,
+            kwargs=kwargs,
         )
 
-    async def error(self, msg, *args, **kwargs):
+    async def error(self, msg: str, *args, **kwargs):
         await self.log(
             msg=self.__form_msg_(msg, *args, **kwargs),
             level='error',
@@ -149,7 +162,7 @@ class Channel:
             kwargs=kwargs,
         )
 
-    async def warning(self, msg, *args, **kwargs):
+    async def warning(self, msg: str, *args, **kwargs):
         await self.log(
             msg=self.__form_msg_(msg, *args, **kwargs),
             level='warning',
@@ -157,7 +170,7 @@ class Channel:
             kwargs=kwargs,
         )
 
-    async def info(self, msg, *args, **kwargs):
+    async def info(self, msg: str, *args, **kwargs):
         await self.log(
             msg=self.__form_msg_(msg, *args, **kwargs),
             level='info',
@@ -165,7 +178,7 @@ class Channel:
             kwargs=kwargs,
         )
 
-    async def debug(self, msg, *args, **kwargs):
+    async def debug(self, msg: str, *args, **kwargs):
         await self.log(
             msg=self.__form_msg_(msg, *args, **kwargs),
             level='debug',

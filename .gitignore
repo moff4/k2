@@ -6,4 +6,5 @@ dist/
 *.pyc
 *.tmp
 *.txt
+.mypy_cache/*
 *private*

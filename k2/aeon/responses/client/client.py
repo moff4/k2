@@ -3,9 +3,9 @@
 import gzip
 
 try:
-    from ujson import loads
+    import ujson as json
 except ImportError:
-    from json import loads
+    import json
 
 from k2.aeon.responses.base_response import Response
 
@@ -35,6 +35,6 @@ class ClientResponse(Response):
 
     def json(self):
         if self._data:
-            return loads(self._data)
+            return json.loads(self._data)
         else:
             return {}

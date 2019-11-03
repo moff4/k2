@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 import time
+import io
+from typing import (
+    Callable,
+    List,
+    Dict,
+    Tuple,
+    Type,
+)
 
 import k2.logger as logger
 from k2.aeon.parser import parse_data
@@ -36,7 +44,7 @@ class Request:
     }
 
     # objects must be asyncio.corutines
-    postware = []
+    postware = []  # type: List[Callable]
 
     def __init__(self, addr, reader, writer, **kwargs):
         self.__start_time = time.time()
@@ -92,15 +100,15 @@ class Request:
         }
         self._initialized = True
 
-    def get_rw(self):
+    def get_rw(self) -> Tuple[io.BytesIO, io.BytesIO]:
         return (self._reader, self._writer)
 
     @property
-    def url(self):
+    def url(self) -> str:
         return self._url
 
     @property
-    def args(self):
+    def args(self) -> Dict[str, str]:
         return self._args
 
     @args.setter
@@ -108,19 +116,19 @@ class Request:
         self._args = args
 
     @property
-    def method(self):
+    def method(self) -> str:
         return self._method
 
     @property
-    def http_version(self):
+    def http_version(self) -> str:
         return self._http_version
 
     @property
-    def headers(self):
+    def headers(self) -> Dict[str, str]:
         return self._headers
 
     @property
-    def data(self):
+    def data(self) -> bytes:
         return self._data
 
     @data.setter
@@ -128,11 +136,11 @@ class Request:
         self._data = data
 
     @property
-    def ip(self):
+    def ip(self) -> str:
         return self._real_ip
 
     @property
-    def ssl(self):
+    def ssl(self) -> bool:
         return self._ssl
 
     async def send(self, resp):
@@ -170,7 +178,7 @@ class Request:
             await self.logger.exception(f'send response: {e}')
             self.keep_alive = False
 
-    async def upgrade_to_ws(self, target, **kwargs):
+    async def upgrade_to_ws(self, target: Type[WSHandler], **kwargs):
         if isinstance(target, type) and not issubclass(target, WSHandler):
             raise TypeError('target ({}) must be subclass of WSHandler', target)
 
@@ -187,7 +195,7 @@ class Request:
         finally:
             await stats.add('ws_connections', -1)
 
-    def is_local(self):
+    def is_local(self) -> bool:
         """
             return True if IP is private
             like 'localhost' or '192.168.*.*'

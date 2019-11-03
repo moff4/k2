@@ -5,6 +5,7 @@ from .counter import Counter
 from .average import Average
 from .time_events import TimeEvents
 from .time_average import TimeAverage
+from .abstract_stat import AbstractStat
 from .event_counter import EventCounter
 from .time_event_counter import TimeEventCounter
 
@@ -14,6 +15,7 @@ __all__ = [
     'Average',
     'TimeEvents',
     'TimeAverage',
+    'AbstractStat',
     'EventCounter',
     'TimeEventCounter',
 ]

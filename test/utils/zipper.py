@@ -174,4 +174,4 @@ class TestZipper(unittest.TestCase):
         self.assertEqual(len(arch), 1)
         info = arch_info(arch, opt)
         self.assertEqual(len(info), 2)
-        self.assertEqual(info, [(0, fn1), (1, fn2)])
+        self.assertEqual(info, [('0', fn1), ('1', fn2)])

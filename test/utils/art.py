@@ -14,7 +14,7 @@ class AbstractArt:
                 self.assertEqual(x, y)
             else:
                 self.assertNotEqual(x, y)
-        except (OverflowError, RuntimeError, ValueError, TypeError) as e:
+        except (OverflowError, RuntimeError, ValueError, TypeError):
             self.assertFalse(expect)
 
     def test_unmask(self):

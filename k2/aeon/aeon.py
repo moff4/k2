@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+from typing import (
+    Callable,
+    List,
+    Type,
+)
+
 from k2.aeon.abstract_aeon import AbstractAeon
 from k2.aeon.requests import Request
 from k2.aeon.responses import Response
@@ -22,8 +28,8 @@ class Aeon(AbstractAeon):
     """
 
     # objects must be callable or asyncio.corutines
-    middleware = []
-    postware = []
+    middleware = []  # type: List[Callable]
+    postware = []  # type: List[Callable]
 
     def __init__(self, *a, **b):
         super().__init__(**b)
@@ -168,23 +174,23 @@ class Aeon(AbstractAeon):
         )
         return await self._handle_request(request, _run_ware=_run_ware)
 
-    def add_namespace(self, namespace):
+    def add_namespace(self, namespace: NameSpace):
         self.namespace.create_tree(namespace)
 
-    def add_site_module(self, key, target):
+    def add_site_module(self, key, target: BaseSiteModule):
         self.namespace[key] = target
 
-    def add_middleware(self, target):
+    def add_middleware(self, target: List[Callable]):
         if not callable(target):
             raise TypeError(f'target ({target}) must be callable')
         self.middleware.append(target)
 
-    def add_postware(self, target):
+    def add_postware(self, target: List[Callable]):
         if not callable(target):
             raise TypeError(f'target ({target}) must be callable')
         self.postware.append(target)
 
-    def add_ws_handler(self, key, target):
+    def add_ws_handler(self, key, target: Type[WSHandler]):
         if not issubclass(target, WSHandler):
             raise TypeError(f'target ({target}) must be subclass of WSHandler')
         self.namespace[key] = target

@@ -3,7 +3,7 @@
 import time
 import binascii
 from os import urandom
-from pygost.gost28147 import cfb_decrypt, cfb_encrypt
+from pygost.gost28147 import cfb_decrypt, cfb_encrypt  # type: ignore
 
 from k2.logger import new_channel
 from k2.utils.autocfg import AutoCFG
@@ -51,7 +51,7 @@ class Tokenazer:
         }
     }
 
-    def __init__(self, secret, **kwargs):
+    def __init__(self, secret: bytes, **kwargs):
         """
             sercret - secret key for crypto
             kwargs:
@@ -64,7 +64,7 @@ class Tokenazer:
 
     async def __decode_cookie(self, cookie, mask=None):
         """
-            return decoded cookie as dict
+            :rtype dict: decoded cookie as dict
             or None in case of error
         """
         try:
@@ -103,7 +103,7 @@ class Tokenazer:
 #                               USER API
 # ==========================================================================
 
-    def generate_cookie(self, user_id, **kwargs):
+    def generate_cookie(self, user_id: int, **kwargs) -> str:
         """
             generate cookie
             must:
@@ -153,25 +153,23 @@ class Tokenazer:
             )
         ).decode()
 
-    async def valid_cookie(self, cookie, mask=None):
+    async def valid_cookie(self, cookie: bytearray, mask=None):
         """
             return decoded cookie as dict if cookie is valid
             or None if cookie is not valid
         """
         try:
-            cookie = await self.__decode_cookie(
-                binascii.unhexlify(
-                    cookie
-                ),
+            ck = await self.__decode_cookie(
+                binascii.unhexlify(cookie),
                 mask,
             )
             if (
-                cookie is None
+                ck is None
             ) or (
-                cookie['exp'] is not None and (cookie['create'] + cookie['exp']) < time.time()
+                ck['exp'] is not None and (ck['create'] + ck['exp']) < time.time()
             ):
                 return None
             else:
-                return cookie
+                return ck
         except binascii.Error:
             return None

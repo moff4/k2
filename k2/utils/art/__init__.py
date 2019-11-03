@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+from typing import Any
+
 from .parser import Parser
 from .coder import Coder
 
 
-def marshal(data, mask=None, random=True):
+def marshal(data: Any, mask: bytes=None, random: bool=True) -> bytes:
     """
         convert data to bytes
         mask - some mask to be applied on marshaled data
@@ -18,7 +20,7 @@ def marshal(data, mask=None, random=True):
         return bytes([data[i] ^ mask[i % len(mask)] for i in range(len(data))])
 
 
-def unmarshal(data=None, fd=None, mask=None):
+def unmarshal(data: bytes=None, fd=None, mask: bytes=None) -> Any:
     """
         convert data as bytes() or from fd {interface : read() }
     """

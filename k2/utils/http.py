@@ -1,6 +1,7 @@
 #!/usr/bin/etc python3
 
 import asyncio
+from typing import Dict, Callable
 
 PRIVETE_IP = set(
     {'10.', '192.168.', '0.0.0.0', '127.0.0.'}.union(
@@ -188,7 +189,7 @@ MAX_STATUS_LENGTH = 256
 
 
 LOG_STRING = '{method} {code} {url} {args}, t={time:.4f}'
-LOG_ARGS = {}
+LOG_ARGS = {}  # type: Dict[str, Callable]
 
 
 async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
