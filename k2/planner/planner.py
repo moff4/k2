@@ -114,3 +114,7 @@ class Planner:
 
     def stop(self):
         self.RUN = False
+        try:
+            self.task.cancel()
+        except Exception:
+            ...
