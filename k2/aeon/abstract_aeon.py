@@ -7,6 +7,25 @@ import socket
 import k2.logger as logger
 from k2.utils.autocfg import AutoCFG
 
+ABSTRACT_AEON_DEFAULTS = {
+    'host': '',
+    'port': 8888,
+    'use_ssl': False,
+    'https_port': 8889,
+    'loop': None,
+    'family': socket.AF_INET,
+    'flags': socket.AI_PASSIVE,
+    'backlog': 100,
+    'ssl': None,
+    'ca_cert': None,
+    'certs': None,  # or dict: host => {certfile, keyfile, keypassword}
+    'reuse_address': None,
+    'reuse_port': None,
+    'ssl_handshake_timeout': None,
+    'start_serving': True,
+    'site_dir': './var/',
+    'logger': {},
+}
 
 class AbstractAeon:
     """
@@ -14,28 +33,8 @@ class AbstractAeon:
         U can overwrite client_connected_cb for your own server
     """
 
-    __defaults = {
-        'host': '',
-        'port': 8888,
-        'use_ssl': False,
-        'https_port': 8889,
-        'loop': None,
-        'family': socket.AF_INET,
-        'flags': socket.AI_PASSIVE,
-        'backlog': 100,
-        'ssl': None,
-        'ca_cert': None,
-        'certs': None,  # or dict: host => {certfile, keyfile, keypassword}
-        'reuse_address': None,
-        'reuse_port': None,
-        'ssl_handshake_timeout': None,
-        'start_serving': True,
-        'site_dir': './var/',
-        'logger': {},
-    }
-
     def __init__(self, **kwargs):
-        self.cfg = AutoCFG({k: kwargs.get(k, self.__defaults[k]) for k in self.__defaults})
+        self.cfg = AutoCFG({k: kwargs.get(k, v) for k, v in ABSTRACT_AEON_DEFAULTS.items()})
         if self.cfg.loop is None:
             self.cfg.loop = asyncio.get_event_loop()
         self._contexts = {}
@@ -69,17 +68,14 @@ class AbstractAeon:
         """
             ssl context callback
         """
-        context = self._contexts.get(req_hostname)
-        if context is None:
+        if (context := self._contexts.get(req_hostname)) is None:
             context = self._contexts.get('*')
         if context:
             sock.context = context
 
     async def client_connected_cb(self, reader, writer):
         try:
-            data = True
-            while data:
-                data = await reader.read(100)
+            while data := await reader.read(100):
                 message = data.decode()
                 addr = writer.get_extra_info('peername')
                 await self._logger.debug(f'recived [{addr[0]}:{addr[1]}] {message.rstrip()}')

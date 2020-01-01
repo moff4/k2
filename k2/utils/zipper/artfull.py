@@ -6,7 +6,7 @@ class ArtMarshalable:
     def export(self):
         raise NotImplemented
 
-    def _import(self, data):
+    def import_(self, data):
         raise NotImplemented
 
     def marshal(self, options):
@@ -14,4 +14,4 @@ class ArtMarshalable:
 
     @classmethod
     def unmarshal(cls, data, options):
-        return cls._import(art.unmarshal(data, mask=options.get('art_mask')))
+        return cls.import_(art.unmarshal(data, mask=options.get('art_mask')))

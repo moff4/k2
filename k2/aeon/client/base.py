@@ -89,12 +89,13 @@ class BaseHTTPSession:
         self._wr = None
 
     async def _request(self, method, url, params=None, data=None, json=None, headers=None, **kwargs):
-        headers = AutoCFG(
-            headers or {},
-            key_modifier=lambda x: x.lower(),
-        )
         params = params or {}
-        headers.update_missing(
+        (
+            headers := AutoCFG(
+                headers or {},
+                key_modifier=lambda x: x.lower(),
+            )
+        ).update_missing(
             {
                 'Host': self._conn_args['host'],
                 'User-Agent': 'AeonClient/1.0',

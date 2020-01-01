@@ -13,29 +13,36 @@ class ScriptRunner:
         ]
 
     async def _run_1_1(self, text, args):
-        text = '\n'.join(
-            [
-                x.strip()
-                for x in text.split('\n')
-                if x and not x.isspace()
-            ]
-        )
         try:
-            return str(eval(text, args, {}))
+            return str(
+                eval(
+                    '\n'.join(
+                        [
+                            x.strip()
+                            for x in text.split('\n')
+                            if x and not x.isspace()
+                        ]
+                    ),
+                    args,
+                    {},
+                ),
+            )
         except Exception:
             await self._logger.exception('Unexpectedly got:')
 
     async def _run_1_0(self, text, args):
-        text = '\n'.join(
-            [
-                x
-                for x in text.split('\n')
-                if x and not x.isspace()
-            ]
-        )
-        local = {'result': ''}
         try:
-            exec(text, args, local)
+            exec(
+                '\n'.join(
+                    [
+                        x
+                        for x in text.split('\n')
+                        if x and not x.isspace()
+                    ]
+                ),
+                args,
+                (local := {'result': ''}),
+            )
             return str(local['result'])
         except Exception:
             await self._logger.exception('Unexpectedly got:')
@@ -45,12 +52,9 @@ class ScriptRunner:
         k = 0
         for sci in self.scripts_info:
             while sci[0] in text and sci[1] in text:
-                i = text.index(sci[0])
-                j = text.index(sci[1])
-                pt1 = text[:i]
-                pt2 = text[j + len(sci[1]):]
-                script = text[i + len(sci[0]):j]
-                result = await sci[2](script, args)
+                pt1 = text[:(i := text.index(sci[0]))]
+                pt2 = text[(j := text.index(sci[1])) + len(sci[1]):]
+                result = await sci[2](text[i + len(sci[0]):j], args)
                 if result is None:
                     await self._logger.error('script #{} ({script[:15]}{"..." if len(script) >= 25 else ""}) failed', k)
                     return False

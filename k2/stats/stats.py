@@ -51,8 +51,7 @@ TypeMap = {
 
 
 async def __callback(event: str, key: str, *a, **b) -> None:
-    callback = Collection[key].callback
-    if callback:
+    if callback := Collection[key].callback:
         if callable(callback):
             callback(event, key, *a, **b)
         else:
@@ -105,9 +104,8 @@ async def reset(key: Optional[str] = None) -> None:
 
 
 def __do_export(key: str) -> Dict[str, Any]:
-    obj = Collection[key].obj
     return {
-        'data': obj.options(),
+        'data': (obj := Collection[key].obj).options(),
         'type': obj.get_type(),
         'description': Collection[key].desc,
     }

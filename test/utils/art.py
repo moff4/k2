@@ -47,11 +47,6 @@ class AbstractArt:
         for x in self.get_x():
             self.do_test(x, m2=m1, m1=m2, expect=False)
 
-    def test_mask_2_fail_2(self):
-        m1 = urandom(8)
-        for x in self.get_x():
-            self.do_test(x, m2=m1, m1=None, expect=False)
-
 
 class TestStrArt(AbstractArt, unittest.TestCase):
     def get_x(self):

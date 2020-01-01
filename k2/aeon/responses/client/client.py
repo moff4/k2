@@ -14,9 +14,8 @@ class ClientResponse(Response):
 
     def __init__(self, **b):
         try:
-            if 'headers' in b and b.get('data'):
-                if b['headers'].get('content-encoding') == 'gzip':
-                    b['data'] = gzip.decompress(b['data'])
+            if 'headers' in b and b.get('data') and b['headers'].get('content-encoding') == 'gzip':
+                b['data'] = gzip.decompress(b['data'])
         finally:
             super().__init__(**b)
 
@@ -34,7 +33,4 @@ class ClientResponse(Response):
             return self._data
 
     def json(self):
-        if self._data:
-            return json.loads(self._data)
-        else:
-            return {}
+        return json.loads(self._data) if self._data else {}

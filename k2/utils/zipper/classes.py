@@ -20,7 +20,7 @@ class Part(ArtMarshalable):
         }
 
     @classmethod
-    def _import(cls, data):
+    def import_(cls, data):
         return cls(
             fid=data['f'],
             data=data['d'],
@@ -41,7 +41,7 @@ class Node:
         }
 
     @classmethod
-    def _import(cls, data):
+    def import_(cls, data):
         return cls(
             fid=data['f'],
             name=data['n'],
@@ -60,8 +60,8 @@ class Archive(ArtMarshalable):
         }
 
     @classmethod
-    def _import(cls, data):
+    def import_(cls, data):
         return cls(
-            nodes=[Node._import(node) for node in data['n']],
-            parts=[Part._import(part) for part in data['p']],
+            nodes=[Node.import_(node) for node in data['n']],
+            parts=[Part.import_(part) for part in data['p']],
         )

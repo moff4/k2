@@ -78,10 +78,10 @@ class Response:
         self._data = b'' if d is None else (d.encode() if isinstance(d, str) else d)
 
     def add_headers(self, *args, **kwargs):
-        if any([not isinstance(i, (dict, tuple)) for i in args]):
+        if any(not isinstance(i, (dict, tuple)) for i in args):
             raise TypeError('HTTP-header must be tuple of dict')
 
-        if any([not isinstance(kwargs[i], str) for i in kwargs]):
+        if any(not isinstance(kwargs[i], str) for i in kwargs):
             raise TypeError('HTTP-header value must be string')
 
         self._headers.update(*args, **kwargs)
@@ -100,8 +100,11 @@ class Response:
         }
 
     async def export(self) -> bytes:
-        data = await self._extra_prepare_data()
-        data = await self._cache_n_zip(data.encode() if isinstance(data, str) else data)
+        data = await self._cache_n_zip(
+            data.encode()
+            if isinstance(data := await self._extra_prepare_data(), str) else
+            data
+        )
         headers = self._headers.update_missing(STANDART_HEADERS)
         headers.update({'Content-Length': len(data)})
         return b''.join(

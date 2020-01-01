@@ -48,10 +48,11 @@ class AutoCFG(dict):
     def __deep_update(d1, d2, create=True):
         for i in d2:
             if i in d1:
-                if isinstance(d2[i], dict) and isinstance(d1[i], dict):
-                    d1[i] = AutoCFG.__deep_update(d1[i], d2[i], create=create)
-                else:
-                    d1[i] = d2[i]
+                d1[i] = (
+                    AutoCFG.__deep_update(d1[i], d2[i], create=create)
+                    if isinstance(d2[i], dict) and isinstance(d1[i], dict) else
+                    d2[i]
+                )
             elif create:
                 d1[i] = d2[i]
         return d1
@@ -98,7 +99,7 @@ class CacheDict(dict):
                 dict will be checked for old rows (and delete them)
     """
 
-    def __init__(self, timeout, func=None, **kwargs):
+    def __init__(self, timeout: float, func=None, **kwargs):
         self._timeout = timeout
         self._func = func
         self.__cfg = AutoCFG(kwargs).update_missing(

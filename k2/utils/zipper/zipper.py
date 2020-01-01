@@ -23,11 +23,12 @@ def compress(
     parts = []
     max_part_size = max_arch_size - 20
     for filename, data in files:
-        node = Node(
-            fid=str(len(nodes)),
-            name=filename,
+        nodes.append(
+            node := Node(
+                fid=str(len(nodes)),
+                name=filename,
+            )
         )
-        nodes.append(node)
         payloads = []
         while data:
             payloads.append(data[:max_part_size])

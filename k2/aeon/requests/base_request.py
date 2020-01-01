@@ -101,7 +101,7 @@ class Request:
         self._initialized = True
 
     def get_rw(self) -> Tuple[io.BytesIO, io.BytesIO]:
-        return (self._reader, self._writer)
+        return self._reader, self._writer
 
     @property
     def url(self) -> str:
@@ -145,8 +145,7 @@ class Request:
 
     async def send(self, resp):
         try:
-            res = await resp.export()
-            self._writer.write(res)
+            self._writer.write(await resp.export())
             total_time = time.time() - self.__start_time
             f = http.LOG_STRING
             args = dict({

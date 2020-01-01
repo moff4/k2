@@ -18,20 +18,19 @@ from k2.utils.http import NOT_FOUND
 
 STATUS_OK = dumps({'status': 'ok'})
 
+STATS_CGI_DEFAULTS = {
+    'localips': False,
+    'secret-value': None,
+    'secret-header': 'x-stats-secret',
+}
 
 class StatsCGI(SiteModule):
-    defautls = {
-        'localips': False,
-        'secret-value': None,
-        'secret-header': 'x-stats-secret',
-    }
-
     def __init__(self, **kwargs):
-        self.cfg = AutoCFG(kwargs).update_missing(self.defautls)
+        self.cfg = AutoCFG(kwargs).update_missing(STATS_CGI_DEFAULTS)
 
     async def handle(self, request, **args):
 
-        if (self.cfg.localips and not request.is_local()):
+        if self.cfg.localips and not request.is_local():
             return Response(code=404)
 
         if (
@@ -52,13 +51,9 @@ class StatsCGI(SiteModule):
                 }
             ),
             code=200,
-            headers={
-                'Content-Type': 'application/json; charset=utf-8',
-            }
+            headers={'Content-Type': 'application/json; charset=utf-8'}
         )
 
     async def post(self, req):
-        await reset(
-            key=req.args.get('key', None)
-        )
+        await reset(key=req.args.get('key', None))
         return Response(code=200, data=STATUS_OK)

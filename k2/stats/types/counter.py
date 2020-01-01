@@ -23,8 +23,7 @@ class Counter(AbstractStat):
         return self._value
 
     def options(self):
-        d = super().options()
-        d.update(
+        (d := super().options()).update(
             {
                 'default': self._default,
             }

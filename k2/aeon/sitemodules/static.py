@@ -20,8 +20,7 @@ class StaticSiteModule(SiteModule):
         headers = {}
         code = 404
         data = b''
-        filename = self._static_root + req.url
-        if os.path.isfile(filename):
+        if os.path.isfile(filename := self._static_root + req.url):
             resp = StaticResponse(
                 request=req,
                 cache_min=self._cache_min,
@@ -35,8 +34,7 @@ class StaticSiteModule(SiteModule):
             urls = []
             url = req.url.rstrip('/')
             for _fn in os.listdir(filename):
-                fn = ''.join([filename, _fn])
-                if os.path.isdir(fn):
+                if os.path.isdir(fn := ''.join([filename, _fn])):
                     urls.append(
                         {
                             'name': _fn,

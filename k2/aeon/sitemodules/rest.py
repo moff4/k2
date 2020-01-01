@@ -18,21 +18,16 @@ from k2.utils.http import (
 class RestSM(SiteModule):
 
     async def __check_schema(self, request):
-        schema = getattr(self, '%s_schema' % request.method, None)
-        if schema is None:
+        if (schema := getattr(self, '%s_schema' % request.method, None)) is None:
             return
-        getter = getattr(self, '%s_getter' % request.method, REST_DEFAULT_GETTERS.get(request.method, None))
-        if getter is None:
+        if (getter := getattr(self, '%s_getter' % request.method, REST_DEFAULT_GETTERS.get(request.method, None))) is None:
             return
-        setter = getattr(self, '%s_setter' % request.method, REST_DEFAULT_SETTERS.get(request.method, None))
-        if setter is None:
+        if (setter := getattr(self, '%s_setter' % request.method, REST_DEFAULT_SETTERS.get(request.method, None))) is None:
             return
-        deserializer = getattr(self, 'deserializer', json.loads)
-        if deserializer is None:
+        if (deserializer := getattr(self, 'deserializer', json.loads)) is None:
             return
-        data = getter(request)
         try:
-            if isinstance(data, (str, bytes)):
+            if isinstance(data := getter(request), (str, bytes)):
                 data = deserializer(data)
             data = apply(data, schema)
         except ValueError as e:
@@ -42,15 +37,13 @@ class RestSM(SiteModule):
 
     async def handle(self, request, **args):
         await self.__check_schema(request)
-        res = await super().handle(request, **args)
-        if not isinstance(res, Response):
-            serializer = (
-                getattr(self, 'serializer')
-                if hasattr(self, 'serializer') else
-                json.dumps
-            )
+        if not isinstance(res := await super().handle(request, **args), Response):
             res = Response(
-                data=serializer(res),
+                data=(
+                    getattr(self, 'serializer')
+                    if hasattr(self, 'serializer') else
+                    json.dumps
+                )(res),
                 code=200,
             )
         return res

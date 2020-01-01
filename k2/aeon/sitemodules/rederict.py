@@ -19,9 +19,10 @@ class Rederict(BaseSiteModule):
             setattr(self, method.lower(), self._req_handler)
 
     async def _req_handler(self, req):
+        headers = dict(self._headers)
         if self._url_modifier:
-            self._headers.update(location=self._url_modifier(req))
+            headers.update(location=self._url_modifier(req))
         return Response(
             code=self._code,
-            headers=self._headers,
+            headers=headers,
         )

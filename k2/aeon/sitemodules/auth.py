@@ -8,9 +8,8 @@ class AuthSM(SiteModule):
 
     async def _check_auth(self, request, **args):
         if hasattr(self, 'authorizator'):
-            authorizator = getattr(self, 'authorizator')
             try:
-                return authorizator(request, **args)
+                return getattr(self, 'authorizator')(request, **args)
             except AeonResponse:
                 raise
             except Exception:

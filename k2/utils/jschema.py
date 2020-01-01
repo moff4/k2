@@ -48,22 +48,14 @@ def apply(obj, scheme, key=None):
     elif isinstance(scheme['type'], type):
         if not isinstance(obj, scheme['type']):
             raise ValueError(f'''expected type "{scheme['type']}" {extra} ; got {type(obj)}''')
-        elif 'filter' in scheme and not scheme['filter'](obj):
-            raise ValueError(
-                f'"{key}" not passed filter'
-            )
-        elif scheme.get('blank') is False and not obj:
-            raise ValueError(
-                f'"{key}" is blank'
-            )
-        elif 'max_length' in scheme and len(obj) > scheme['max_length']:
-            raise ValueError(
-                f'"{key}" > max_length'
-            )
-        elif 'min_length' in scheme and len(obj) < scheme['min_length']:
-            raise ValueError(
-                f'"{key}" < min_length'
-            )
+        if 'filter' in scheme and not scheme['filter'](obj):
+            raise ValueError(f'"{key}" not passed filter')
+        if scheme.get('blank') is False and not obj:
+            raise ValueError(f'"{key}" is blank')
+        if 'max_length' in scheme and len(obj) > scheme['max_length']:
+            raise ValueError(f'"{key}" > max_length')
+        if 'min_length' in scheme and len(obj) < scheme['min_length']:
+            raise ValueError(f'"{key}" < min_length')
 
         if issubclass(scheme['type'], list):
             if 'value' in scheme:
@@ -82,8 +74,7 @@ def apply(obj, scheme, key=None):
                         )
                     else:
                         raise ValueError(f'''Got unexpected keys: "{'", "'.join([str(i) for i in unex])}" {extra};''')
-                missed = {i for i in scheme['value'] if i not in obj and 'default' not in scheme['value'][i]}
-                if missed:
+                if missed := {i for i in scheme['value'] if i not in obj and 'default' not in scheme['value'][i]}:
                     raise ValueError(f'''expected keys "{'", "'.join([str(i) for i in missed])}" {extra}''')
 
                 new_obj.update(

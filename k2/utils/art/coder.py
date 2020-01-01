@@ -46,38 +46,27 @@ class Coder:
         """
         if data != 0:
             st = []
-            sign = data < 0
-            data = -data if sign else data
+            data = -data if (sign := data < 0) else data
             while data > 0:
-                st.insert(0, data % 128)
+                st.append(data % 128)
                 data //= 128
-            st[-1] |= 0x80
+            (st := st[::-1])[-1] |= 0x80
         else:
             st = [0x80]
             sign = False
-        if not just:
-            tmp = self._gen_type(INT_NEG if sign else INT_POS)
-            tmp.extend(st)
-            st = tmp
-        return st
+        return st if just else [*self._gen_type(INT_NEG if sign else INT_POS), *st]
 
     def _float(self, data, just=False):
         """
             Float
         """
-        a = data
-        sign = a < 0
+        sign = data < 0
         c = 0
-        while a != round(a):
-            a *= 10
+        while data != round(data):
+            data *= 10
             c += 1
-        st = self._int(int(a), just=True)
-        st.extend(self._int(int(c), just=True))
-        if not just:
-            tmp = self._gen_type(FLOAT_NEG if sign else FLOAT_POS)
-            tmp.extend(st)
-            st = tmp
-        return st
+        st = [*self._int(int(data), just=True), *self._int(int(c), just=True)]
+        return st if just else [*self._gen_type(FLOAT_NEG if sign else FLOAT_POS), *st]
 
     def _bytes(self, data, string=False, just=False):
         """
@@ -85,31 +74,26 @@ class Coder:
         """
         st = []
         c = 0
-        for i in range(len(data)):
-            if data[i] == 0:
+        for i in data:
+            if i == 0:
                 c += 1
             elif c != 0:
-                st.append(0)
-                st += list(self._int(c, just=True))
                 c = 0
-                st.append(data[i])
+                st.extend([0, *self._int(c, just=True), i])
             else:
-                st.append(data[i])
-        if c != 0:
+                st.append(i)
+        if c:
             st.append(0)
             st.extend(self._int(c, just=True))
         st.extend((0, 0))
-        if not just:
-            st.insert(0, self._gen_type(STRING if string else BYTES)[0])
-        return st
+        return st if just else [*self._gen_type(STRING if string else BYTES), *st]
 
     def _list(self, data, just=False):
         """
             list
         """
         st = [] if just else self._gen_type(LIST)
-        for i in data:
-            st.extend(self._type(i))
+        st.extend(j for i in data for j in self._type(i))
         st.extend(self._none())
         return st
 

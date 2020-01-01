@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import re
+from typing import Tuple, Dict, Optional
 
 from k2.aeon.sitemodules.base import BaseSiteModule
 from k2.aeon.responses import Response
@@ -11,18 +12,18 @@ class NameSpace:
     TYPE_LEAFE = 0
     TYPE_SUBTREE = 1
 
-    def __init__(self, tree=None):
+    def __init__(self, tree=None) -> None:
         self._keys = AutoCFG()
         if tree:
             self.create_tree(tree)
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         return key in self._keys
 
-    def __getitem__(self, key):
-        return (self._keys[key]['value'], self._keys[key]['type'])
+    def __getitem__(self, key) -> Tuple[str, str]:
+        return self._keys[key]['value'], self._keys[key]['type']
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value) -> None:
         try:
             err = (
                 not isinstance(value, (BaseSiteModule, WSHandler, NameSpace, Response, dict))
@@ -50,33 +51,33 @@ class NameSpace:
     def items(self):
         yield from self._keys.items()
 
-    def find_best(self, name, args=None):
+    def find_best(self, name, args=None) -> Tuple[Optional[str], Optional[Dict[str, str]]]:
         args = args or {}
         if name in self._keys and self._keys[name]['type'] == self.TYPE_LEAFE:
             return self._keys[name]['value'], args
 
-        az = []
-        for key in self._keys:
-            m = re.match(key, name)
-            if m is not None:
-                az.append((key, m))
-
-        if not az:
+        if not (
+             az := [
+                (key, m)
+                for key in self._keys
+                if (m := re.match(key, name)) is not None
+            ]
+        ):
             return None, None
 
         for key, m in sorted(az, key=lambda x: x[1].end() - x[1].start(), reverse=True):
             if self._keys[key]['type'] == self.TYPE_LEAFE:
                 return self._keys[key]['value'], dict(args, **m.groupdict())
-            else:
-                target, _args = self._keys[key]['value'].find_best(
+            elif (
+                variant := self._keys[key]['value'].find_best(
                     name=name[m.end():],
                     args=dict(args, **m.groupdict()),
                 )
-                if target:
-                    return target, _args
+            )[0]:
+                return variant
         return None, None
 
-    def create_tree(self, tree):
+    def create_tree(self, tree) -> None:
         """
             tree - namespace or dict:
                 key == name

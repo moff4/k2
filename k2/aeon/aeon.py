@@ -124,7 +124,7 @@ class Aeon(AbstractAeon):
                     await stats.add(key='request_log', value=f'{request.method} {request.url} {request.args}')
                     resp = await self._handle_request(request)
 
-                if resp is not None:
+                if resp:
                     await request.logger.debug('gonna send response')
                     await request.send(resp)
 

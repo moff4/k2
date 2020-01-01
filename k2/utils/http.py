@@ -192,17 +192,10 @@ LOG_STRING = '{method} {code} {url} {args}, t={time:.4f}'
 LOG_ARGS = {}  # type: Dict[str, Callable]
 
 
-async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
+async def readln(reader, max_len=None, ignore_zeros=False, exception=None) -> bytes:
     st = []
-    a = True
-    while a:
-        a = await reader.read(1)
-        if not a:
-            if ignore_zeros and not st:
-                continue
-            else:
-                break
-        if (not st and (not ignore_zeros or a[0] >= 32)) or st:
+    while a := await reader.read(1) or (ignore_zeros and not st):
+        if st or (not ignore_zeros or a[0] >= 32):
             if a == b'\n':
                 break
             if a != b'\r':
@@ -212,15 +205,15 @@ async def readln(reader, max_len=None, ignore_zeros=False, exception=None):
     return bytes(st)
 
 
-def mime_type(st):
+def mime_type(st: str) -> str:
     st = st.split('.')[-1]
-    for type in CONTENT_TYPE_MAP:
-        if st in CONTENT_TYPE_MAP[type]:
-            return '{}/{}'.format(type, CONTENT_TYPE_MAP[type][st])
+    for type, _map in CONTENT_TYPE_MAP.values():
+        if st in _map:
+            return '{}/{}'.format(type, _map[st])
     return DEFAULT_CONTENT_TYPE
 
 
-def content_type(st):
+def content_type(st: str) -> Dict[str, str]:
     """
         get filename or url as str
         return content-type header as dict

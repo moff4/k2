@@ -14,23 +14,23 @@ from k2.utils.autocfg import AutoCFG
 
 Locks = {}  # type: Dict[str, synchronize.Lock]
 
+CHANNEL_DEFAULTS = {
+    'key': None,
+    'timeout': 3600,
+    'limit': 1000,
+    'autosave': '--no-log' not in sys.argv,
+    'log_file': 'log.txt',
+    'callback': None,
+    'stdout': '--stdout' in sys.argv,
+    'time_format': '%d.%m.%Y %H:%M:%S',
+    'log_levels': {'info', 'warning', 'error'}.union({'debug'} if '--debug' in sys.argv else set()),
+    'log_format': '{timestamp} -:- {level} [{key}] {msg}',
+}
 
 class Channel:
-    defaults = {
-        'key': None,
-        'timeout': 3600,
-        'limit': 1000,
-        'autosave': '--no-log' not in sys.argv,
-        'log_file': 'log.txt',
-        'callback': None,
-        'stdout': '--stdout' in sys.argv,
-        'time_format': '%d.%m.%Y %H:%M:%S',
-        'log_levels': {'info', 'warning', 'error'}.union({'debug'} if '--debug' in sys.argv else set()),
-        'log_format': '{timestamp} -:- {level} [{key}] {msg}',
-    }
 
     def __init__(self, **kwargs):
-        self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
+        self.cfg = AutoCFG(CHANNEL_DEFAULTS).update_fields(kwargs)
         if self.cfg.key is not None:
             if any((re.match(f'--stdout=.*{self.cfg.key}.*', x) is not None for x in sys.argv)):
                 self.cfg.stdout = True
@@ -46,8 +46,7 @@ class Channel:
         self._t = 0
 
     def _clear(self):
-        _t = int(time.time())
-        if self._t != self._t:
+        if self._t != (_t := int(time.time())):
             self._t = _t
             _t -= self.cfg.timeout
             while self._logs and self._logs[0]['timestamp'] > _t:
@@ -80,9 +79,8 @@ class Channel:
             return
         args = args or tuple()
         kwargs = kwargs or {}
-        timestamp = time.time()
         log_msg = self.cfg.log_format.format(
-            timestamp=time.strftime(self.cfg.time_format, time.localtime(timestamp)),
+            timestamp=time.strftime(self.cfg.time_format, time.localtime(timestamp := time.time())),
             level=level,
             key=self.cfg.key,
             msg=msg,
@@ -180,7 +178,7 @@ class Channel:
         )
 
     def clear(self):
-        self._logs = []
+        self._logs.clear()
 
     def export(self):
         return self._logs

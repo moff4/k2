@@ -24,21 +24,20 @@ TEXT = 'text'
 # or <private> + ':' + uid + '@' + 'path'
 ServerCache = CacheDict(timeout=120 * ('--no-cache' not in sys.argv))
 
+STATIC_RESPONSE_DEFAULTS = {
+    'cache_min': 120,  # max-age
+    'cache_public': True,  # public/private
+    'cache_of_uid': None,  # if cache is private and server_cache -> uid of owner
+    'max_response_size': (2 ** 18),  # <=> chunk size
+    'server_cache': True,  # cache on server
+    'compress': 'gzip',  # compress data; allowed: 'gzip' or None
+}
+
 
 class StaticResponse(Response):
-
-    defaults = {
-        'cache_min': 120,  # max-age
-        'cache_public': True,  # public/private
-        'cache_of_uid': None,  # if cache is private and server_cache -> uid of owner
-        'max_response_size': (2 ** 18),  # <=> chunk size
-        'server_cache': True,  # cache on server
-        'compress': 'gzip',  # compress data; allowed: 'gzip' or None
-    }
-
     def __init__(self, request, **kwargs):
         super().__init__()
-        self.cfg = AutoCFG(self.defaults).update_fields(kwargs)
+        self.cfg = AutoCFG(STATIC_RESPONSE_DEFAULTS).update_fields(kwargs)
         self.content_mod = None
         self.vars = dict(
             {
@@ -54,27 +53,14 @@ class StaticResponse(Response):
         if not self.cfg.cache_public and self.cfg.cache_of_uid is None:
             raise ValueError('UID must be set for private cache')
         return ''.join(
-            [
-                'public@',
-                self.req.url,
-                '?',
-                str(self.req.args),
-            ]
+            ['public@', self.req.url, '?', str(self.req.args)]
             if self.cfg.cache_public else
-            [
-                'private:',
-                str(self.cfg.cache_of_uid),
-                '@',
-                self.req.url,
-                '?',
-                str(self.req.args),
-            ]
+            ['private:', str(self.cfg.cache_of_uid), '@', self.req.url, '?', str(self.req.args)]
         )
 
     async def _run_scripts(self):
         if self.content_mod == TEXT and self._data:
-            sr = ScriptRunner(text=self._data, logger=self.req.logger)
-            if await sr.run(args=self.vars):
+            if await (sr := ScriptRunner(text=self._data, logger=self.req.logger)).run(args=self.vars):
                 self._data = sr.export()
             else:
                 self._data = SMTH_HAPPENED
@@ -88,10 +74,8 @@ class StaticResponse(Response):
         """
         if self.cfg.server_cache:
             await self.req.logger.debug('get file from cache')
-            key = self.__get_cache_key()
             try:
-                data = ServerCache[key]
-                self._data = data['data']
+                self._data = (data := ServerCache[self.__get_cache_key()])['data']
                 self.headers.update(data['headers'])
                 self.code = data['code']
                 self._cached = True
@@ -109,9 +93,8 @@ class StaticResponse(Response):
             else:
                 _from = 0
                 _to = self.cfg.max_response_size
-                if self.req is not None and 'range' in self.req.headers:
-                    tmp = self.req.headers['range'].split('=')
-                    if tmp[0] == 'bytes':
+                if self.req and 'range' in self.req.headers:
+                    if (tmp := self.req.headers['range'].split('='))[0] == 'bytes':
                         a, b = tmp[1].split('-')
                         _from = int(a) if a else 0
                         _to = int(b) if b else (_from + self.cfg.max_response_size)
@@ -130,7 +113,7 @@ class StaticResponse(Response):
             self.content_mod = (
                 TEXT
                 if next(
-                    headers[i] for i in headers
+                    value for value in headers.values()
                 ).startswith('text') else
                 BIN
             )
@@ -157,9 +140,7 @@ class StaticResponse(Response):
             if 'gzip' not in self.req.headers.get('accept-encoding', ''):
                 return data
             if self.cfg.compress == 'gzip':
-                l1 = len(data)
-                data = gzip.compress(data)
-                await self.req.logger.debug('compress data {} -> {}', l1, len(data))
+                await self.req.logger.debug('compress data {} -> {}', len(data), len(data := gzip.compress(data)))
                 self.headers['Content-Encoding'] = 'gzip'
 
         if self.cfg.server_cache and self.code not in {204, 206}:

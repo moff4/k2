@@ -29,19 +29,16 @@ class ClientSession(BaseHTTPSession):
 
     async def _request(self, method, url, *a, **b):
         allow_redirects = b.pop('allow_redirects', True)
-        for i in range(self.cfg.max_rederict_count):
-            res = await super()._request(method=method, url=url, *a, **b)
-            await self._parse_cookie(res)
+        for _ in range(self.cfg.max_rederict_count):
+            await self._parse_cookie(res := await super()._request(method=method, url=url, *a, **b))
             if res and res.code in {301, 302, 303, 307, 308} and allow_redirects:
-                url = res.headers.get('location')
-                if url is None:
+                if (url := res.headers.get('location')) is None:
                     return res
                 await self._logger.debug('rederict to {}', url)
                 if url.startswith('http://') or url.startswith('https://'):
-                    new_url = urlparse(url)
                     host, port = (
                         new_url.netloc.split(':')
-                        if ':' in new_url.netloc else
+                        if ':' in (new_url := urlparse(url)).netloc else
                         (
                             new_url.netloc,
                             80
@@ -67,27 +64,25 @@ class ClientSession(BaseHTTPSession):
                     options = []
                     kwoptions = {}
                     kv, *pr = cookie_strs[i].split(';')
-                    key, value = [i.strip() for i in kv.split('=')]
+                    key, value = [k.strip() for k in kv.split('=')]
                     while pr:
-                        j = pr.pop(0)
-                        if '=' in j:
+                        if '=' in (j := pr.pop(0)):
                             pr_k, pr_v = [k.strip() for k in j.split('=')]
                             if pr_k == 'expires':
                                 i += 1
-                                pr_next = cookie_strs[i].split(';')
-                                j = pr_next.pop(0)
+                                j = (pr_next := cookie_strs[i].split(';')).pop(0)
                                 pr.extend(pr_next)
                                 pr_v = ','.join([pr_v, j])
                             kwoptions[pr_k] = pr_v
                         else:
                             options.append(j.strip())
                     i += 1
-                res.add_cookie(
-                    key,
-                    value,
-                    *options,
-                    **kwoptions,
-                )
+                    res.add_cookie(
+                        key,
+                        value,
+                        *options,
+                        **kwoptions,
+                    )
                 res.headers.pop('set-cookie')
         except Exception:
             await self._logger.exception('parse-cookie:')

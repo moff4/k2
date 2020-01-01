@@ -16,7 +16,7 @@ class Tokenazer:
     """
         This module is to encrypt and descrypt tokens
         like cookie - session_id
-        sessin_id = art(
+        session_id = art(
             {
                 'd': cfb_encrypt(
                     art(
@@ -134,13 +134,10 @@ class Tokenazer:
         else:
             mask = None
         data.update({params[i]: kwargs[i] for i in params if i in kwargs})
-        data = art.marshal(data, mask=mask, random=True)
-
-        iv = urandom(8)
         data = cfb_encrypt(
             self.secret,
-            data=data,
-            iv=iv
+            data=art.marshal(data, mask=mask, random=True),
+            iv=(iv := urandom(8)),
         )
 
         return binascii.hexlify(

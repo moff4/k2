@@ -9,6 +9,7 @@ class TimeEvents(AbstractStat):
     _type = 'time_events'
 
     def __init__(self, limit=3600):
+        super().__init__()
         self._limit = limit
         self._value = []
         self._t = 0
@@ -21,10 +22,9 @@ class TimeEvents(AbstractStat):
             self._t = _t
 
     def add(self, value):
-        _t = int(time.time())
         self._value.append(
             {
-                'timestamp': _t,
+                'timestamp': (_t := int(time.time())),
                 'value': value,
             }
         )
@@ -45,8 +45,7 @@ class TimeEvents(AbstractStat):
         return self._type
 
     def options(self):
-        d = super().options()
-        d.update(
+        (d := super().options()).update(
             {
                 'count': len(self._value),
                 'limit': self._limit,

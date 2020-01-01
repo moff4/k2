@@ -6,32 +6,31 @@ import k2.logger as logger
 from k2.utils.autocfg import AutoCFG
 
 SHEDULE_LIMIT = 100
+TASK_DEFAULTS = {
+    'key': None,
+    'interval': {
+        'sec': 0,
+        'min': 0,
+        'hour': 0,
+    },
+    'offset': {
+        'sec': 0,
+        'min': 0,
+        'hour': 0,
+    },
+    'weekdays': set(range(0, 8)),
+    'count': None,
+    'args': (),
+    'kwargs': {},
+    'enable': True,
+}
 
 
 class Task:
-    __defaults = {
-        'key': None,
-        'interval': {
-            'sec': 0,
-            'min': 0,
-            'hour': 0,
-        },
-        'offset': {
-            'sec': 0,
-            'min': 0,
-            'hour': 0,
-        },
-        'weekdays': set(range(0, 8)),
-        'count': None,
-        'args': (),
-        'kwargs': {},
-        'enable': True,
-    }
-
     def __init__(self, target, **kwargs):
         if not (callable(target) or asyncio.iscoroutinefunction(target)):
             raise TypeError('target must be callable or async coroutine')
-        self._cfg = AutoCFG(self.__defaults).deep_update_fields(kwargs)
+        self._cfg = AutoCFG(TASK_DEFAULTS).deep_update_fields(kwargs)
         self._target = target
         self._offset = (self._cfg.offset['hour'] * 60 + self._cfg.offset['min']) * 60 + self._cfg.offset['sec']
         self._inter = (self._cfg.interval['hour'] * 60 + self._cfg.interval['min']) * 60 + self._cfg.interval['sec']
@@ -42,9 +41,9 @@ class Task:
         if not self.enable:
             return
 
-        self._shedule = []
-        _t = time.time()
-        nr = ((_t // self._inter) + 1) * self._inter + self._offset
+        self._shedule.clear()
+
+        nr = (((_t := time.time()) // self._inter) + 1) * self._inter + self._offset
         while len(self._shedule) < SHEDULE_LIMIT and (nr - _t) < 7 * 3600:
             if time.localtime(nr).tm_wday in self._cfg.weekdays:
                 self._shedule.append(nr)
@@ -55,23 +54,24 @@ class Task:
         return self._shedule
 
     @shedule.setter
-    def shedule(self, shedule):
-        self._shedule = shedule
+    def shedule(self, shd):
+        self._shedule = shd
 
     @property
-    def enable(self):
+    def enable(self) -> bool:
         return self._cfg.enable
 
     @enable.setter
-    def enable(self, value):
+    def enable(self, value: bool) -> None:
         if not isinstance(value, bool):
             raise TypeError('value must be bool')
         self._cfg.enable = value
+        if not value:
+            self._shedule.clear()
 
     @property
     def delay(self):
-        nr = self.next_run
-        return None if nr is None else nr - time.time()
+        return None if (nr := self.next_run) is None else nr - time.time()
 
     @property
     def name(self):
