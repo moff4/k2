@@ -55,37 +55,31 @@ async def parse_data(reader, **kwargs):
     st = st.strip()
     if not st:
         raise AeonResponse('empty string', code=400, close_conn=True, silent=True)
-    tmp = []
     i = 0
     while len(st) > i and st[i] > 32:
-        tmp.append(st[i])
         i += 1
-    st = st[i + 1:].strip()
 
-    req.method = bytes(tmp).decode()
+    req.method = bytes(st[:i]).decode()
+    st = st[i:].lstrip()
+
     if not req.method:
         raise AeonResponse('Empty method field', code=400, close_conn=True, silent=True)
     elif req.method not in cfg.allowed_methods and '*' not in cfg.allowed_methods:
         raise AeonResponse(f'Unexpected method "{req.method}"', code=405)
 
-    tmp = []
-    for i in st:
-        if i > 32:
-            tmp.append(i)
-        else:
-            break
-    parsed_url = urlparse(bytes(tmp).decode('utf-8'))
-    req.url = parsed_url.path
-    args = parse_qs(parsed_url.query)
-    req.args = {k: args[k][0] for k in args if args[k]}
-    st = st[len(tmp):].strip()
-
-    tmp = []
     i = 0
     while len(st) > i and st[i] > 32:
-        tmp.append(st[i])
         i += 1
-    req.http_version = bytes(tmp).decode('utf-8')
+
+    parsed_url = urlparse(bytes(st[:i]).decode('utf-8'))
+    req.url = parsed_url.path
+    req.args = {k: v[0] for k, v in parse_qs(parsed_url.query).items() if v}
+    st = st[i:].lstrip()
+
+    i = 0
+    while len(st) > i and st[i] > 32:
+        i += 1
+    req.http_version = bytes(st[:i]).decode('utf-8')
     if req.http_version not in cfg.allowed_http_version:
         raise AeonResponse(f'Unexpected HTTP version: {req.http_version}', code=418, close_conn=True)
 
@@ -124,12 +118,9 @@ async def parse_data(reader, **kwargs):
             raise AeonResponse('Too much data', code=413)
         buff = []
         length = 0
-        i = 0
-        while length < _len and i < 100:
+        while length < _len:
             buff.append(await reader.read(_len - length))
             length += len(buff[-1])
-        if length < _len:
-            raise AeonResponse('read data %s out of %s' % (length, _len), code=500)
         req.data = b''.join(buff)
     return req
 
@@ -160,7 +151,7 @@ async def parse_response_data(reader, **kwargs):
     if not st or not st.startswith('HTTP/'):
         raise ValueError('Invalid protocol')
 
-    version, code, *_ = st.split(' ')
+    version, code, *_ = st.split()
 
     if version not in cfg.expected_http_version:
         raise ValueError('unsupported protocol version "{}"'.format(version))
@@ -173,11 +164,8 @@ async def parse_response_data(reader, **kwargs):
         raise ValueError('Invalid status code')
     headers = AutoCFG(key_modifier=lambda x: x.lower())
 
-    for i in range(cfg.max_header_count):
-        st = (
-            await readln(reader, max_len=cfg.max_header_length)
-        ).decode().strip()
-
+    for _ in range(cfg.max_header_count):
+        st = (await readln(reader, max_len=cfg.max_header_length)).decode().strip()
         if not st:
             break
 

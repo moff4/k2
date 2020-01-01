@@ -72,7 +72,7 @@ class AbstractAeon:
         context = self._contexts.get(req_hostname)
         if context is None:
             context = self._contexts.get('*')
-        if context is not None:
+        if context:
             sock.context = context
 
     async def client_connected_cb(self, reader, writer):

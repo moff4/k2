@@ -15,11 +15,23 @@ class TestJschema(unittest.TestCase):
         except ValueError:
             self.assertFalse(expect)
 
+    def test_simple_const(self):
+        obj = '123'
+        self.do_test(obj, 'const', obj)
+        obj = 123
+        self.do_test(obj, 'const', obj)
+
     def test_simple_str(self):
         obj = '123'
         self.do_test(obj, {'type': str}, obj)
         obj = 123
         self.do_test(obj, {'type': str}, obj, False)
+
+    def test_simpler_str(self):
+        obj = '123'
+        self.do_test(obj, str, obj)
+        obj = 123
+        self.do_test(obj, str, obj, False)
 
     def test_simple_int(self):
         obj = 100500
@@ -27,17 +39,35 @@ class TestJschema(unittest.TestCase):
         obj = '100500'
         self.do_test(obj, {'type': int}, obj, False)
 
+    def test_simpler_int(self):
+        obj = 100500
+        self.do_test(obj, int, obj)
+        obj = '100500'
+        self.do_test(obj, int, obj, False)
+
     def test_simple_float(self):
         obj = 1.001
         self.do_test(obj, {'type': float}, obj)
         obj = 1
         self.do_test(obj, {'type': float}, obj, False)
 
+    def test_simpler_float(self):
+        obj = 1.001
+        self.do_test(obj, float, obj)
+        obj = 1
+        self.do_test(obj, float, obj, False)
+
     def test_simple_bool(self):
         obj = True
         self.do_test(obj, {'type': bool}, obj)
         obj = 1
         self.do_test(obj, {'type': bool}, obj, False)
+
+    def test_simpler_bool(self):
+        obj = True
+        self.do_test(obj, bool, obj)
+        obj = 1
+        self.do_test(obj, bool, obj, False)
 
     def test_simple_dict(self):
         obj = {'1': 2, 'abc': 'cde'}

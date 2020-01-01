@@ -101,8 +101,7 @@ class Response:
 
     async def export(self) -> bytes:
         data = await self._extra_prepare_data()
-        data = data.encode() if isinstance(data, str) else data
-        data = await self._cache_n_zip(data)
+        data = await self._cache_n_zip(data.encode() if isinstance(data, str) else data)
         headers = self._headers.update_missing(STANDART_HEADERS)
         headers.update({'Content-Length': len(data)})
         return b''.join(
@@ -112,28 +111,29 @@ class Response:
                         f'{self.http_version} '
                         f'{204 if len(data) <= 0 and self.code in {200, 201} else self.code} '
                         f'{HTTP_CODE_MSG[self.code]}',
-                    ] + [
-                        ''.join([i, ': ', str(headers[i])])
-                        for i in filter(
-                            lambda x: x,
-                            headers,
-                        )
-                    ] + [
-                        'Set-Cookie: {}'.format(
-                            '; '.join(
-                                [
-                                    f'''{name}={quote(self._cookies[name]['value'])}'''
-                                ] + [
-                                    f'{key}={quote(str(val))}'
-                                    for key, val in self._cookies[name]['properties'].items()
-                                ] + list(
-                                    self._cookies[name]['flags']
+                        *[
+                            ''.join([key, ': ', str(value)])
+                            for key, value in headers.items()
+                            if key and value
+                        ],
+                        *[
+                            'Set-Cookie: {}'.format(
+                                '; '.join(
+                                    [
+                                        f'''{name}={quote(self._cookies[name]['value'])}''',
+                                        *[
+                                            f'{key}={quote(str(val))}'
+                                            for key, val in self._cookies[name]['properties'].items()
+                                        ],
+                                        *list(self._cookies[name]['flags'])
+                                    ]
                                 )
                             )
-                        )
-                        for name in self._cookies
-                    ] + ['\r\n'],
+                            for name in self._cookies
+                        ],
+                        '\r\n',
+                    ]
                 ).encode(),
-                data
+                data,
             ]
         )

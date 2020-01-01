@@ -4,7 +4,7 @@ import sys
 import time
 import asyncio
 import traceback
-from typing import Dict, Tuple, Any, Callable
+from typing import Dict, Tuple, Any
 from multiprocessing import (
     Lock,
     synchronize,
@@ -75,7 +75,6 @@ class Channel:
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         from_child: bool=False,
-        exception: bool=False,
     ):
         if level not in self.cfg.log_levels:
             return
@@ -141,15 +140,9 @@ class Channel:
             )
 
     async def exception(self, msg: str, *args, **kwargs):
-        az = [
-            self.__form_msg_(msg, *args, **kwargs),
-            '\n',
-        ]
-        az.extend(traceback.format_exception(*sys.exc_info()))
         await self.log(
-            msg=''.join(az),
+            msg=''.join([self.__form_msg_(msg, *args, **kwargs), '\n', *traceback.format_exception(*sys.exc_info())]),
             level=kwargs.get('level', 'error'),
-            exception=True,
             args=args,
             kwargs=kwargs,
         )

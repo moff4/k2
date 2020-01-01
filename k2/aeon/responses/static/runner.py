@@ -22,7 +22,7 @@ class ScriptRunner:
         )
         try:
             return str(eval(text, args, {}))
-        except Exception as e:
+        except Exception:
             await self._logger.exception('Unexpectedly got:')
 
     async def _run_1_0(self, text, args):
@@ -37,8 +37,8 @@ class ScriptRunner:
         try:
             exec(text, args, local)
             return str(local['result'])
-        except Exception as e:
-            await self._logger.exception('Unexpectedly got: {}')
+        except Exception:
+            await self._logger.exception('Unexpectedly got:')
 
     async def run(self, args):
         text = self.text

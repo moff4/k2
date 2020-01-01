@@ -1,22 +1,15 @@
 #!/usr/bin/env python3
 
-MAP = {
-    list: list,
-    dict: dict,
-    int: int,
-    float: float,
-    str: str,
-    bool: bool,
-}
-
 
 def apply(obj, scheme, key=None):
     """
         obj - some object
         scheme - jschema
         key is name of top-level object (or None) ; (for log)
-        scheme ::= {
-          type       : type of this object : "list/dict/str/int/float/const"
+        scheme ::= type of this object : list/dict/str/int/float or "const"
+          OR
+        scheme ::= dict - {
+          type       : type of this object : "list/dict/str/int/float or "const"
           value      : scheme - need for
                          - list/dict - pointer to scheme for child
                          - const - list or set (or iterable) of allowed values
@@ -33,10 +26,16 @@ def apply(obj, scheme, key=None):
     def default(value):
         return value() if callable(value) else value
 
-    _key = key if key is not None else 'Top-level'
-    extra = '' if key is None else ''.join(['for ', key])
-    if not isinstance(scheme, dict):
-        raise ValueError(f'scheme must be dict {extra}')
+    _key = key if key else 'Top-level'
+    extra = ''.join(['for ', key]) if key else ''
+    if not isinstance(scheme, (dict, type)) and scheme != 'const':
+        raise ValueError(f'scheme must be type, dict or "const" {extra}')
+    elif scheme == 'const':
+        return obj
+    elif isinstance(scheme, type):
+        if isinstance(obj, scheme):
+            return  obj
+        raise ValueError(f'"{obj}" is not type of "{scheme}" {extra}')
 
     if 'pre_call' in scheme:
         obj = scheme['pre_call'](obj)
@@ -46,8 +45,8 @@ def apply(obj, scheme, key=None):
             raise ValueError(
                 f'"{obj}" is not allowed as "{key}"'
             )
-    elif scheme['type'] in MAP:
-        if not isinstance(obj, MAP[scheme['type']]):
+    elif isinstance(scheme['type'], type):
+        if not isinstance(obj, scheme['type']):
             raise ValueError(f'''expected type "{scheme['type']}" {extra} ; got {type(obj)}''')
         elif 'filter' in scheme and not scheme['filter'](obj):
             raise ValueError(
@@ -66,10 +65,10 @@ def apply(obj, scheme, key=None):
                 f'"{key}" < min_length'
             )
 
-        if MAP[scheme['type']] == MAP[list]:
+        if issubclass(scheme['type'], list):
             if 'value' in scheme:
                 obj = [apply(i, scheme['value'], key=_key) for i in obj]
-        elif MAP[scheme['type']] == MAP[dict]:
+        elif issubclass(scheme['type'], dict):
             if 'value' in scheme:
                 new_obj = {}
                 unex = {i for i in obj if i not in scheme['value']}

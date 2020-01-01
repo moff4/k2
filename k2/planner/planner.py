@@ -19,7 +19,7 @@ class Planner:
         'loop': None
     }
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.cfg = AutoCFG(self.__defaults).update_fields(kwargs)
         self.RUN = True
         self.task = None
@@ -69,7 +69,7 @@ class Planner:
             key=lambda task: task.next_run,
         ) if self._tasks else None
 
-    async def _chek_running_tasks(self):
+    async def _check_running_tasks(self):
         new_task_list = []
         for key, task in self._running_tasks:
             if not task.done():
@@ -94,7 +94,7 @@ class Planner:
                 if abs(time.time() - task.next_run) < eps:
                     self.run_task(task.name)
                 timeout = min(self.cfg.timeout, task.delay / 1.5)
-            await self._chek_running_tasks()
+            await self._check_running_tasks()
             await asyncio.sleep(timeout)
 
     def run_task(self, key, run_copy=False):

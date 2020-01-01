@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from typing import  Optional
+
 from k2.aeon.responses import Response
 
 
@@ -15,14 +17,14 @@ class AeonResponse(Exception):
         self.silent = b.get('silent', False)
         self._resp = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '<AeonResponse [{code}] {msg}>'.format(
             msg=self._msg,
             code=self.code,
         )
 
     @property
-    def response(self):
+    def response(self) -> Optional[Response]:
         if self._resp:
             return self._resp
         if self.silent:

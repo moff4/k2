@@ -2,7 +2,9 @@
 
 from typing import (
     Callable,
+    Dict,
     List,
+    Optional,
     Type,
 )
 
@@ -43,7 +45,7 @@ class Aeon(AbstractAeon):
         stats.new(key='ws_connections', type='counter', description='opened ws conenctions')
         stats.new(key='connections', type='counter', description='opened conenctions')
 
-    async def _handle_request(self, request, _run_ware=True):
+    async def _handle_request(self, request: Request, _run_ware: bool = True):
         try:
             module, args = self.namespace.find_best(request.url)
             if not module:
@@ -142,14 +144,14 @@ class Aeon(AbstractAeon):
 
     async def emulate_request(
         self,
-        url,
-        headers=None,
-        args=None,
-        data=None,
-        method='GET',
-        http_version='HTTP/1.1',
-        _run_ware=False,
-    ):
+        url: str,
+        headers: Dict[str, str] = None,
+        args: Dict[str, str] = None,
+        data: Optional[bytes] = None,
+        method: str = 'GET',
+        http_version: str = 'HTTP/1.1',
+        _run_ware: bool = False,
+    ) -> Response:
         """
             imulate incoming request
             usefull for testing
@@ -174,23 +176,23 @@ class Aeon(AbstractAeon):
         )
         return await self._handle_request(request, _run_ware=_run_ware)
 
-    def add_namespace(self, namespace: NameSpace):
+    def add_namespace(self, namespace: NameSpace) -> None:
         self.namespace.create_tree(namespace)
 
-    def add_site_module(self, key, target: BaseSiteModule):
+    def add_site_module(self, key, target: BaseSiteModule) -> None:
         self.namespace[key] = target
 
-    def add_middleware(self, target: List[Callable]):
-        if not callable(target):
-            raise TypeError(f'target ({target}) must be callable')
+    def add_middleware(self, target: List[Callable]) -> None:
+        if not callable(target) and not asyncio.iscoroutinefunction(target):
+            raise TypeError(f'target ({target}) must be callable or awatable')
         self.middleware.append(target)
 
-    def add_postware(self, target: List[Callable]):
-        if not callable(target):
-            raise TypeError(f'target ({target}) must be callable')
+    def add_postware(self, target: List[Callable]) -> None:
+        if not callable(target) and not asyncio.iscoroutinefunction(target):
+            raise TypeError(f'target ({target}) must be callable or awatable')
         self.postware.append(target)
 
-    def add_ws_handler(self, key, target: Type[WSHandler]):
+    def add_ws_handler(self, key, target: Type[WSHandler]) -> None:
         if not issubclass(target, WSHandler):
             raise TypeError(f'target ({target}) must be subclass of WSHandler')
         self.namespace[key] = target

@@ -3,6 +3,7 @@
 import time
 import binascii
 from os import urandom
+from typing import Any, Optional, Dict
 from pygost.gost28147 import cfb_decrypt, cfb_encrypt  # type: ignore
 
 from k2.logger import new_channel
@@ -51,18 +52,18 @@ class Tokenazer:
         }
     }
 
-    def __init__(self, secret: bytes, **kwargs):
+    def __init__(self, secret: bytes, **kwargs) -> None:
         """
-            sercret - secret key for crypto
+            secret - secret key for crypto
             kwargs:
-                mask_0 - bytes - extra sercret (default: None)
-                mask_1 - bytes - extra sercret (default: None)
+                mask_0 - bytes - extra secret (default: None)
+                mask_1 - bytes - extra secret (default: None)
         """
         self.cfg = AutoCFG(self.__defaults).update_fields(kwargs)
         self.secret = secret
         self.logger = new_channel('tokenazer')
 
-    async def __decode_cookie(self, cookie, mask=None):
+    async def __decode_cookie(self, cookie: bytes, mask: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
         """
             :rtype dict: decoded cookie as dict
             or None in case of error
@@ -153,7 +154,7 @@ class Tokenazer:
             )
         ).decode()
 
-    async def valid_cookie(self, cookie: bytearray, mask=None):
+    async def valid_cookie(self, cookie: bytes, mask: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
         """
             return decoded cookie as dict if cookie is valid
             or None if cookie is not valid

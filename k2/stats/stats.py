@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import asyncio
 from dataclasses import dataclass
-from typing import Dict, Callable, Optional
+from typing import Any, Dict, Callable, Optional
 
 from k2.stats.types import (
     Single,
@@ -50,7 +50,7 @@ TypeMap = {
 }
 
 
-async def __callback(event: str, key: str, *a, **b):
+async def __callback(event: str, key: str, *a, **b) -> None:
     callback = Collection[key].callback
     if callback:
         if callable(callback):
@@ -59,7 +59,7 @@ async def __callback(event: str, key: str, *a, **b):
             await callback(event, key, *a, **b)
 
 
-def new(key: str, type: str, description: str=None, callback: Callable=None, *a, **b):
+def new(key: str, type: str, description: Optional[str] = None, callback: Optional[Callable] = None, *a, **b) -> Stat:
     if type not in TypeMap:
         raise ValueError(f'unknown stat type "{type}"')
     if callback is not None:
@@ -72,7 +72,7 @@ def new(key: str, type: str, description: str=None, callback: Callable=None, *a,
     )
 
 
-def update(key: str, description: str=None, callback=None, *a, **b):
+def update(key: str, description: Optional[str] = None, callback: Optional[Callable] = None, *a, **b) -> None:
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
     if description is not None:
@@ -85,14 +85,14 @@ def update(key: str, description: str=None, callback=None, *a, **b):
     Collection[key].obj.update(*a, **b)
 
 
-async def add(key: str, *a, **b):
+async def add(key: str, *a, **b) -> None:
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
     Collection[key].obj.add(*a, **b)
     await __callback('add', key, *a, **b)
 
 
-async def reset(key: str=None):
+async def reset(key: Optional[str] = None) -> None:
     if key:
         if key not in Collection:
             raise KeyError(f'stat "{key}" does not exists')
@@ -104,7 +104,7 @@ async def reset(key: str=None):
             await __callback('reset', key)
 
 
-def __do_export(key: str):
+def __do_export(key: str) -> Dict[str, Any]:
     obj = Collection[key].obj
     return {
         'data': obj.options(),
@@ -113,13 +113,13 @@ def __do_export(key: str):
     }
 
 
-def export_one(key: str):
+def export_one(key: str) -> Dict[str, Any]:
     if key not in Collection:
         raise KeyError(f'stat "{key}" does not exists')
     return __do_export(key)
 
 
-def export():
+def export() -> Dict[str, Dict[str, Any]]:
     return {
         key: __do_export(key)
         for key in Collection
