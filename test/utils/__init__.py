@@ -8,6 +8,7 @@ from .art import (
     TestListArt,
     TestDictArt,
 )
+from .autocfg import TestParseEnv
 
 __all__ = [
     'TestJschema',
@@ -17,4 +18,5 @@ __all__ = [
     'TestFloatArt',
     'TestListArt',
     'TestDictArt',
+    'TestParseEnv',
 ]

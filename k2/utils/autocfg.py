@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
+
 import time
+from typing import Dict, Any
 
 
 class AutoCFG(dict):
@@ -143,3 +144,19 @@ class CacheDict(dict):
                 'data': value,
             },
         )
+
+
+def parse_env(env: Dict[str, str], split='.') -> Dict[str, Any]:
+    """
+        covert {'aeon_protocol_methods': 'smth'} into {'aeon': {'protocol': {'methdos': 'smth'}}}
+    """
+    def insert(data, keys, value):
+        if keys:
+            key, keys = keys[0], keys[1:]
+            if key not in data:
+                data[key] = {} if keys else value
+            insert(data[key], keys, value)
+    res = {}
+    for k, v in env.items():
+        insert(res, k.split(split), v)
+    return res
