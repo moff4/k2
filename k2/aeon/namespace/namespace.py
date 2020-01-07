@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import re
-from typing import Tuple, Dict, Optional
+from typing import Tuple, Dict, Optional, Any
 
 from k2.aeon.sitemodules.base import BaseSiteModule
 from k2.aeon.responses import Response
@@ -28,7 +28,7 @@ class NameSpace:
             err = (
                 not isinstance(value, (BaseSiteModule, WSHandler, NameSpace, Response, dict))
             ) and (
-                not issubclass(value, WSHandler)
+                not issubclass(value, (BaseSiteModule, WSHandler))
             )
         except TypeError:
             err = True
@@ -51,7 +51,7 @@ class NameSpace:
     def items(self):
         yield from self._keys.items()
 
-    def find_best(self, name, args=None) -> Tuple[Optional[str], Optional[Dict[str, str]]]:
+    def find_best(self, name, args: Optional[Dict[str, Any]] = None) -> Tuple[Optional[str], Optional[Dict[str, str]]]:
         args = args or {}
         if name in self._keys and self._keys[name]['type'] == self.TYPE_LEAFE:
             return self._keys[name]['value'], args
@@ -60,8 +60,8 @@ class NameSpace:
              az := [
                 (key, m)
                 for key in self._keys
-                if (m := re.match(key, name)) is not None
-            ]
+                if (m := re.match(key, name))
+             ]
         ):
             return None, None
 

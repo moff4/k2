@@ -13,6 +13,7 @@ from k2.stats.types import (
     EventCounter,
     TimeEventCounter
 )
+from k2.utils.tools import call_corofunc
 
 """
 stat-name => {
@@ -52,10 +53,7 @@ TypeMap = {
 
 async def __callback(event: str, key: str, *a, **b) -> None:
     if callback := Collection[key].callback:
-        if callable(callback):
-            callback(event, key, *a, **b)
-        else:
-            await callback(event, key, *a, **b)
+        await call_corofunc(callback, event, key, *a, **b)
 
 
 def new(key: str, type: str, description: Optional[str] = None, callback: Optional[Callable] = None, *a, **b) -> Stat:

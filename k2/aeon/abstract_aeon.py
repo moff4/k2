@@ -27,6 +27,7 @@ ABSTRACT_AEON_DEFAULTS = {
     'logger': {},
 }
 
+
 class AbstractAeon:
     """
         Simple echo server using asyncio

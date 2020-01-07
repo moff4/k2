@@ -11,11 +11,11 @@ from k2.utils.zipper.classes import (
 def compress(
     files: List[Tuple[str, bytes]],
     options: Dict[str, bytes],
-    max_arch_size: int=175 * 2 ** 20,
+    max_arch_size: int = 175 * 2 ** 20,
 ) -> List[bytes]:
     """
-        :param list: files list of tulples (filename, data)
-        :param dict: options
+        :param files: List[Tuple[str, bytes]]: files (filename, data)
+        :param options: Dict[str, bytes]
         :param max_arch_size: max size of any archive
         :rtype list: list of bytes
     """
@@ -80,8 +80,8 @@ def compress(
 
 def arch_info(archs: List[bytes], options: Dict[str, bytes]) -> List[Tuple[str, bytes]]:
     """
-        :param list: list of bytes
-        :param dict: options
+        :param archs: List[bytes]
+        :param options: Dict[str, bytes]
         :rtype list: list of tulples (fid, filename)
     """
     _archs = [Archive.unmarshal(a, options) for a in archs]
@@ -97,8 +97,8 @@ def arch_info(archs: List[bytes], options: Dict[str, bytes]) -> List[Tuple[str, 
 
 def decompress(archs: List[bytes], options: Dict[str, bytes]) -> List[Tuple[str, bytes]]:
     """
-        :param list: list of bytes
-        :param dict: options
+        :param archs: List[bytes]
+        :param options: Dict[str, bytes]
         :rtype list: list of tulples (filename, data)
     """
     _archs = [Archive.unmarshal(a, options) for a in archs]
@@ -118,7 +118,7 @@ def decompress(archs: List[bytes], options: Dict[str, bytes]) -> List[Tuple[str,
             filename,
             b''.join(
                 p.data
-                for p in sorted(parts, key=lambda p: p.idx)
+                for p in sorted(parts, key=lambda prt: prt.idx)
             )
         )
         for filename, parts in fp.items()

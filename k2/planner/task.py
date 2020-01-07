@@ -4,6 +4,7 @@ import time
 
 import k2.logger as logger
 from k2.utils.autocfg import AutoCFG
+from k2.utils.tools import call_corofunc
 
 SHEDULE_LIMIT = 100
 TASK_DEFAULTS = {
@@ -88,7 +89,7 @@ class Task:
         if self._shedule and not run_copy:
             self._shedule.pop(0)
 
-    async def run(self, run_copy=False):
+    async def run(self):
         """
             run task
             do not call task directlly
@@ -97,10 +98,7 @@ class Task:
         await self.logger.debug('Gonna run')
         _t = time.time()
         try:
-            if asyncio.iscoroutinefunction(self._target):
-                await self._target(*self._cfg.args, **self._cfg.kwargs)
-            else:
-                self._target(*self._cfg.args, **self._cfg.kwargs)
+            await call_corofunc(self._target, *self._cfg.args, **self._cfg.kwargs)
         except Exception:
             await self.logger.exception('Task "{}" failed', self._cfg.key)
         else:

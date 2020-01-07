@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import asyncio
 from typing import (
     Callable,
     Dict,
@@ -13,7 +14,7 @@ from k2.aeon.requests import Request
 from k2.aeon.responses import Response
 from k2.aeon.exceptions import AeonResponse
 from k2.aeon.sitemodules.base import BaseSiteModule
-from k2.aeon.ws import WSHandler
+from k2.aeon.ws.base import BaseWSHandler
 from k2.aeon.namespace import NameSpace
 from k2.utils.autocfg import AutoCFG
 from k2.utils.http import (
@@ -33,9 +34,10 @@ class Aeon(AbstractAeon):
     middleware = []  # type: List[Callable]
     postware = []  # type: List[Callable]
 
-    def __init__(self, *a, **b):
+    def __init__(self, /, **b):
         super().__init__(**b)
         self._request_prop = b.get('request', {})
+        self._ws_prop = b.get('websocket', {})
         self.namespace = NameSpace(
             tree=b.get('namespace'),
         )
@@ -50,27 +52,29 @@ class Aeon(AbstractAeon):
             module, args = self.namespace.find_best(request.url)
             if not module:
                 resp = Response(data=NOT_FOUND, code=404)
+            else:
+                if isinstance(module, type) and issubclass(module, (BaseWSHandler, BaseSiteModule)):
+                    module = module(request, **(self._ws_prop if isinstance(module, BaseWSHandler) else {}))
+                if isinstance(module, BaseWSHandler):
+                    await request.logger.debug('found ws-handler: {}', module)
+                    if request.headers.get('upgrade', '').lower() == 'websocket':
+                        await request.upgrade_to_ws(module, **args)
+                        request.keep_alive = False
+                        resp = None
+                    else:
+                        resp = Response(data=NOT_FOUND, code=404)
 
-            elif isinstance(module, WSHandler):
-                await request.logger.debug('found ws-handler: {}', module)
-                if request.headers.get('upgrade', '').lower() == 'websocket':
-                    await request.upgrade_to_ws(module, **args)
-                    request.keep_alive = False
-                    resp = None
+                elif isinstance(module, BaseSiteModule):
+                    await request.logger.debug('found module: {}', module)
+                    if _run_ware:
+                        for ware in self.middleware:
+                            await run_ware(ware, module=module, request=request, args=args)
+                    resp = await module.handle(request=request, **args)
+
+                elif isinstance(module, Response):
+                    resp = module
                 else:
                     resp = Response(data=NOT_FOUND, code=404)
-
-            elif isinstance(module, BaseSiteModule):
-                await request.logger.debug('found module: {}', module)
-                if _run_ware:
-                    for ware in self.middleware:
-                        await run_ware(ware, module=module, request=request, args=args)
-                resp = await module.handle(request=request, **args)
-
-            elif isinstance(module, Response):
-                resp = module
-            else:
-                resp = Response(data=NOT_FOUND, code=404)
 
         except AeonResponse as e:
             resp = e.response
@@ -182,17 +186,17 @@ class Aeon(AbstractAeon):
     def add_site_module(self, key, target: BaseSiteModule) -> None:
         self.namespace[key] = target
 
-    def add_middleware(self, target: List[Callable]) -> None:
+    def add_middleware(self, target: Callable) -> None:
         if not callable(target) and not asyncio.iscoroutinefunction(target):
             raise TypeError(f'target ({target}) must be callable or awatable')
         self.middleware.append(target)
 
-    def add_postware(self, target: List[Callable]) -> None:
+    def add_postware(self, target: Callable) -> None:
         if not callable(target) and not asyncio.iscoroutinefunction(target):
             raise TypeError(f'target ({target}) must be callable or awatable')
         self.postware.append(target)
 
-    def add_ws_handler(self, key, target: Type[WSHandler]) -> None:
-        if not issubclass(target, WSHandler):
-            raise TypeError(f'target ({target}) must be subclass of WSHandler')
+    def add_ws_handler(self, key, target: Type[BaseWSHandler]) -> None:
+        if not issubclass(target, BaseWSHandler):
+            raise TypeError(f'target ({target}) must be subclass of BaseWSHandler')
         self.namespace[key] = target

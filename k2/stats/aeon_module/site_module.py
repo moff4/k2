@@ -14,7 +14,7 @@ from k2.stats import (
     reset,
 )
 from k2.utils.autocfg import AutoCFG
-from k2.utils.http import NOT_FOUND
+from k2.utils.http import NOT_FOUND, FORBIDDEN
 
 STATUS_OK = dumps({'status': 'ok'})
 
@@ -24,25 +24,22 @@ STATS_CGI_DEFAULTS = {
     'secret-header': 'x-stats-secret',
 }
 
+
 class StatsCGI(SiteModule):
     def __init__(self, **kwargs):
         self.cfg = AutoCFG(kwargs).update_missing(STATS_CGI_DEFAULTS)
 
     async def handle(self, request, **args):
-
         if self.cfg.localips and not request.is_local():
-            return Response(code=404)
+            return Response(code=404, data=NOT_FOUND)
 
-        if (
-            self.cfg['secret-value']
-        ) and (
-            self.cfg['secret-value'] != request.headers.get(self.cfg['secret-header'], None)
-        ):
-            return Response(code=403)
+        if self.cfg['secret-value'] != request.headers.get(self.cfg['secret-header'], None):
+            return Response(code=403, data=FORBIDDEN)
 
         return await super().handle(request, **args)
 
-    async def get(self, req):
+    @staticmethod
+    def get():
         return Response(
             data=dumps(
                 {

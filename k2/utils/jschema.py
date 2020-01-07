@@ -34,7 +34,7 @@ def apply(obj, scheme, key=None):
         return obj
     elif isinstance(scheme, type):
         if isinstance(obj, scheme):
-            return  obj
+            return obj
         raise ValueError(f'"{obj}" is not type of "{scheme}" {extra}')
 
     if 'pre_call' in scheme:

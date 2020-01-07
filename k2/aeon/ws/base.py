@@ -9,7 +9,7 @@ from socket import error as SocketError
 
 from k2.aeon.responses import Response
 from k2.utils.autocfg import AutoCFG
-from k2.utils.ws import encode_to_UTF8
+from k2.utils.tools import encode_to_utf8, call_corofunc
 
 '''
 +-+-+-+-+-------+-+-------------+-------------------------------+
@@ -61,17 +61,9 @@ class BaseWSHandler:
             self.OPCODE_PING: self.send_pong,
             self.OPCODE_PONG: lambda msg: msg,
         }
-
-    def setup(self):
         self.keep_alive = True
         self.handshake_done = False
         self.valid_client = False
-
-    async def __call(self, handler, *a, **b):
-        if asyncio.iscoroutinefunction(handler):
-            await handler(*a, **b)
-        else:
-            handler(*a, **b)
 
     async def handle_incoming_msg(self, message):
         pass
@@ -92,7 +84,6 @@ class BaseWSHandler:
         await self.finish()
 
     async def mainloop(self):
-        self.setup()
         try:
             while self.keep_alive:
                 if not self.handshake_done:
@@ -113,7 +104,7 @@ class BaseWSHandler:
                 self.keep_alive = False
                 return
             b1, b2 = 0, 0
-        except ValueError as e:
+        except ValueError:
             b1, b2 = 0, 0
 
         # fin = b1 & FIN
@@ -150,7 +141,7 @@ class BaseWSHandler:
             message_byte ^= masks[len(message_bytes) % 4]
             message_bytes.append(message_byte)
         handler = self.handler_map[opcode]
-        await self.__call(
+        await call_corofunc(
             handler,
             message_bytes.decode('utf8')
             if opcode == self.OPCODE_TEXT else
@@ -168,7 +159,6 @@ class BaseWSHandler:
 
     async def close_conn(self):
         if self.keep_alive:
-            self.valid = False
             await self.send_text(b'ABCD', self.OPCODE_CLOSE_CONN)
             self.wfile.close()
             if sys.version_info[0] >= 3 and sys.version_info[1] >= 7:
@@ -185,20 +175,14 @@ class BaseWSHandler:
         # Validate message
         if isinstance(message, (bytes, bytearray)):
             message = bytes(message)
-        elif isinstance(message, str):
-            message = encode_to_UTF8(message)
-        else:
-            # 'Can\'t send message, message has to be a string or bytes. Given type is %s' % type(message)
+        elif not isinstance(message, str) or (message := encode_to_utf8(message)) is None:
             return False
 
         header = bytearray()
-        payload = message
-        payload_length = len(payload)
-
-        if payload_length <= 125:
+        if (payload_length := len(message)) <= 125:
             header.append(self.FIN | opcode)
             header.append(payload_length)
-        elif payload_length >= 126 and payload_length <= 65535:
+        elif 126 <= payload_length <= 65535:
             header.append(self.FIN | opcode)
             header.append(self.PAYLOAD_LEN_EXT16)
             header.extend(struct.pack('>H', payload_length))
@@ -209,8 +193,10 @@ class BaseWSHandler:
         else:
             raise Exception('Message is too big. Consider breaking it into chunks.')
 
+        header.extend(message)
+
         try:
-            self.wfile.write(header + payload)
+            self.wfile.write(header)
             await self.wfile.drain()
         except ConnectionError as e:
             await self.req.logger.debug(f'[{self.req.ip}:{self.req.port}] send: {e}')
@@ -221,10 +207,9 @@ class BaseWSHandler:
             self.keep_alive = False
             return
 
-        await self.__call(self.on_request)
+        await call_corofunc(self.on_request)
 
-        key = self.req.headers.get('sec-websocket-key')
-        if key is None:
+        if (key := self.req.headers.get('sec-websocket-key')) is None:
             # 'Client tried to connect but was missing a key'
             self.keep_alive = False
             return
@@ -241,16 +226,14 @@ class BaseWSHandler:
         )
         self.handshake_done = True
         self.valid_client = True
-        await self.__call(self.on_validate)
+        await call_corofunc(self.on_validate)
 
     @classmethod
     def calculate_response_key(cls, key):
-        hash = sha1(key.encode() + cls.GUID)
-        response_key = b64encode(hash.digest()).strip()
-        return response_key.decode('ASCII')
+        return b64encode(sha1(key.encode() + cls.GUID).digest()).strip().decode('ASCII')
 
     async def finish(self):
         await self.close_conn()
-        await self.__call(self.on_end)
+        await call_corofunc(self.on_end)
         self.keep_alive = False
         self.alive = False

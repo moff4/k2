@@ -38,9 +38,7 @@ class Tokenazer:
     cookie_scheme = {
         'type': dict,
         'value': {
-            'create': {
-                'type': int
-            },
+            'create': int,
             'uid': {
                 'pre_call': str,
                 'type': str,
@@ -69,10 +67,6 @@ class Tokenazer:
             or None in case of error
         """
         try:
-            data = art.unmarshal(
-                data=cookie,
-                mask=self.cfg.mask_0
-            )
             return jschema.apply(
                 obj=art.unmarshal(
                     data=cfb_decrypt(
@@ -95,7 +89,12 @@ class Tokenazer:
                 ),
                 scheme=self.cookie_scheme,
                 key='cookie'
-            ) if data else None
+            ) if (
+                data := art.unmarshal(
+                    data=cookie,
+                    mask=self.cfg.mask_0
+                )
+            ) else None
         except Exception as e:
             await self.logger.exception('decode cookie: {}', e, level='warning')
             return None
@@ -104,11 +103,11 @@ class Tokenazer:
 #                               USER API
 # ==========================================================================
 
-    def generate_cookie(self, user_id: int, **kwargs) -> str:
+    def generate_cookie(self, user_id: str, **kwargs) -> str:
         """
             generate cookie
             must:
-              user_id     - int - user identificator
+              user_id     - str - any user identificator
             optional:
               expires     - int - num of seconds this cookie is valid
               mask        - bytes - extra mask
@@ -151,7 +150,7 @@ class Tokenazer:
             )
         ).decode()
 
-    async def valid_cookie(self, cookie: bytes, mask: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
+    async def valid_cookie(self, cookie: str, mask: Optional[bytes] = None) -> Optional[Dict[str, Any]]:
         """
             return decoded cookie as dict if cookie is valid
             or None if cookie is not valid
@@ -169,5 +168,6 @@ class Tokenazer:
                 return None
             else:
                 return ck
-        except binascii.Error:
+        except binascii.Error as ex:
+            await self.logger.warning('validate: {}', ex)
             return None

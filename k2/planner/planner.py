@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import asyncio
-import time
 from collections import defaultdict
 from typing import List, Tuple
 
@@ -86,14 +85,12 @@ class Planner:
 
     async def _mainloop(self) -> None:
         await self._logger.debug('planner started')
-        eps = 0.1
         while self.RUN:
-            tasks = self.check_shedule()
             timeout = self.cfg.timeout
-            for task in tasks:
+            for task in self.check_shedule():
                 await self._logger.debug('next task "{}" in {:.2f} sec', task.name, task.delay)
                 self.run_task(task.name)
-                timeout = min([self.cfg.timeout, task.delay / 1.5, timeout])
+                timeout = min([task.delay / 1.5, timeout])
             await self._check_running_tasks()
             await asyncio.sleep(timeout)
 
@@ -103,7 +100,7 @@ class Planner:
         self._running_tasks.append((task.name, self.cfg.loop.create_task(task.run())))
 
     def add_task(self, target, **kwargs) -> None:
-        if (key := kwargs.get('key') or ''.join(hex(i)[2:] for i in os.urandom(4)).upper()) in self._tasks:
+        if (key := (kwargs.get('key') or ''.join(hex(i)[2:] for i in os.urandom(4)).upper())) in self._tasks:
             raise ValueError(f'key "{key}" already in use')
         kwargs['key'] = key
         self._tasks[key] = Task(target=target, **kwargs)
@@ -113,7 +110,4 @@ class Planner:
 
     def stop(self) -> None:
         self.RUN = False
-        try:
-            self.task.cancel()
-        except Exception:
-            ...
+        self.task.cancel()

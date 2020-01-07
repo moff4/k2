@@ -105,6 +105,15 @@ NOT_FOUND = '''
 </body></html>
 '''
 
+FORBIDDEN = '''
+<html><head>
+<title>403 Forbidden</title>
+</head><body>
+<h1>Forbidden</h1>
+<p>The requested URL is not allowed to be shown you.</p>
+</body></html>
+'''
+
 SMTH_HAPPENED = '''
 <html><head>
 <title>500 Smth happened</title>

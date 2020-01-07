@@ -12,7 +12,7 @@ from typing import (
 import k2.logger as logger
 from k2.aeon.parser import parse_data
 from k2.aeon.exceptions import AeonResponse
-from k2.aeon.ws import WSHandler
+from k2.aeon.ws.base import BaseWSHandler
 from k2.utils.autocfg import AutoCFG
 from k2.utils import http
 import k2.stats.stats as stats
@@ -66,6 +66,11 @@ class Request:
         self._headers = {}
         self._data = b''
         self._ssl = kwargs.get('ssl', False)
+        self._send = False
+        self._callback = {
+            'before_send': [],
+            'after_send': [],
+        }
 
     def __del__(self):
         logger.delete_channel(self.logger)
@@ -148,12 +153,12 @@ class Request:
             self._writer.write(await resp.export())
             total_time = time.time() - self.__start_time
             f = http.LOG_STRING
-            args = dict({
-                k: v(self, resp) if callable(v) else v
-                for k, v in http.LOG_ARGS.items()
-            })
-            args.update(
+            args = dict(
                 {
+                    k: v(self, resp) if callable(v) else v
+                    for k, v in http.LOG_ARGS.items()
+                },
+                **{
                     'method': self._method,
                     'code': resp.code,
                     'url': self.url,
@@ -171,24 +176,24 @@ class Request:
 
             await self._writer.drain()
         except (BrokenPipeError, IOError, ConnectionError) as e:
-            await self.logger.warning(f'pipe error: {e}')
+            await self.logger.warning('pipe error: {}', e)
             self.keep_alive = False
         except Exception as e:
-            await self.logger.exception(f'send response: {e}')
+            await self.logger.exception('send response: {}', e)
             self.keep_alive = False
 
-    async def upgrade_to_ws(self, target: Type[WSHandler], **kwargs):
-        if isinstance(target, type) and not issubclass(target, WSHandler):
+    async def upgrade_to_ws(self, target: Type[BaseWSHandler], **kwargs):
+        if isinstance(target, type) and not issubclass(target, BaseWSHandler):
             raise TypeError('target ({}) must be subclass of WSHandler', target)
 
-        if not isinstance(target, type) and not isinstance(target, WSHandler):
+        if not isinstance(target, type) and not isinstance(target, BaseWSHandler):
             raise TypeError('target ({}) must be instance of WSHandler', target)
 
         try:
             await stats.add('ws_connections')
             await (
                 target
-                if isinstance(target, WSHandler) else
+                if isinstance(target, BaseWSHandler) else
                 target(self, **kwargs)
             ).mainloop()
         finally:
