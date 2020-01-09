@@ -19,7 +19,7 @@ class TimeEventCounter(AbstractStat):
             self._value.pop(self._ts.pop(0), None)
 
     def add(self):
-        self._value[(_t := int(time.time()))] = self._value.get(_t, 0) + 1
+        self._value[_t] = self._value.get(_t := int(time.time()), 0) + 1
         self._ts.append(_t)
         self._check(_t)
 
