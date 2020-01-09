@@ -1,6 +1,6 @@
 
 import time
-from typing import Dict, Any
+from typing import Dict, Any, Type
 
 
 class AutoCFG(dict):
@@ -146,7 +146,7 @@ class CacheDict(dict):
         )
 
 
-def parse_env(env: Dict[str, str], split='.') -> Dict[str, Any]:
+def parse_env(env: Dict[str, str], split: str = '.', dict_class: Type = dict) -> Dict[str, Any]:
     """
         covert {'aeon_protocol_methods': 'smth'} into {'aeon': {'protocol': {'methdos': 'smth'}}}
     """
@@ -154,9 +154,9 @@ def parse_env(env: Dict[str, str], split='.') -> Dict[str, Any]:
         if keys:
             key, keys = keys[0], keys[1:]
             if key not in data:
-                data[key] = {} if keys else value
+                data[key] = dict_class() if keys else value
             insert(data[key], keys, value)
-    res = {}
+    res = dict_class()
     for k, v in env.items():
         insert(res, k.split(split), v)
     return res
