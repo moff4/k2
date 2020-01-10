@@ -90,6 +90,7 @@ HTTP_METHODS = {
     'HEAD',
     'PUT',
     'DELETE',
+    'OPTIONS',
 }
 
 HTTP_VERSIONS = [
@@ -203,7 +204,10 @@ LOG_ARGS = {}  # type: Dict[str, Callable]
 
 async def readln(reader, max_len=None, ignore_zeros=False, exception=None) -> bytes:
     st = []
-    while a := await reader.read(1) or (ignore_zeros and not st):
+    a = True
+    while a or (ignore_zeros and not st):
+        if not (a := await reader.read(1)):
+            break
         if st or (not ignore_zeros or a[0] >= 32):
             if a == b'\n':
                 break
@@ -216,9 +220,9 @@ async def readln(reader, max_len=None, ignore_zeros=False, exception=None) -> by
 
 def mime_type(st: str) -> str:
     st = st.split('.')[-1]
-    for type, _map in CONTENT_TYPE_MAP.values():
+    for type_, _map in CONTENT_TYPE_MAP.values():
         if st in _map:
-            return '{}/{}'.format(type, _map[st])
+            return '{}/{}'.format(type_, _map[st])
     return DEFAULT_CONTENT_TYPE
 
 
@@ -260,6 +264,7 @@ REST_DEFAULT_GETTERS = {
     'POST': lambda request: request.data,
     'PUT': lambda request: request.data,
     'DELETE': lambda request: request.data,
+    'OPTIONS': lambda request: request.data,
 }
 
 REST_DEFAULT_SETTERS = {
@@ -268,4 +273,5 @@ REST_DEFAULT_SETTERS = {
     'POST': __request_set_data,
     'PUT': __request_set_data,
     'DELETE': __request_set_data,
+    'OPTIONS': __request_set_args,
 }

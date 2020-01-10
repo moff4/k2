@@ -28,7 +28,7 @@ class NameSpace:
             err = (
                 not isinstance(value, (BaseSiteModule, WSHandler, NameSpace, Response, dict))
             ) and (
-                not issubclass(value, (BaseSiteModule, WSHandler))
+                not issubclass(value, WSHandler)
             )
         except TypeError:
             err = True

@@ -8,3 +8,4 @@ dist/
 *.txt
 .mypy_cache/*
 *private*
+.idea*
