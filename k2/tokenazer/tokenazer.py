@@ -36,7 +36,7 @@ class Tokenazer:
     }
 
     cookie_scheme = {
-        'type': dict,
+        type: dict,
         'value': {
             'create': int,
             'uid': {
@@ -87,8 +87,7 @@ class Tokenazer:
                         mask
                     ),
                 ),
-                scheme=self.cookie_scheme,
-                key='cookie'
+                schema=self.cookie_scheme,
             ) if (
                 data := art.unmarshal(
                     data=cookie,

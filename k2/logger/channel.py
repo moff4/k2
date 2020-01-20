@@ -3,8 +3,9 @@ import re
 import sys
 import time
 import asyncio
+import logging
 import traceback
-from typing import Dict, Tuple, Any
+from typing import Dict, Tuple, Any, Union, List, Optional, Iterable
 from multiprocessing import (
     Lock,
     synchronize,
@@ -25,11 +26,13 @@ CHANNEL_DEFAULTS = {
     'time_format': '%d.%m.%Y %H:%M:%S',
     'log_levels': {'info', 'warning', 'error'}.union({'debug'} if '--debug' in sys.argv else set()),
     'log_format': '{timestamp} -:- {level} [{key}] {msg}',
+    'std_logging': True,
 }
+
 
 class Channel:
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.cfg = AutoCFG(CHANNEL_DEFAULTS).update_fields(kwargs)
         if self.cfg.key is not None:
             if any((re.match(f'--stdout=.*{self.cfg.key}.*', x) is not None for x in sys.argv)):
@@ -41,31 +44,34 @@ class Channel:
 
         if self.cfg.autosave and self.cfg.log_file not in Locks:
             Locks[self.cfg.log_file] = Lock()
-        self.parents = []
-        self._logs = []
+        self.parents = []  # type: List[Dict[str, Union[Channel, Iterable]]]
+        self._logs = []  # type: List[Dict[str, Union[str, int]]]
         self._t = 0
+        self._logger = logging.Logger(self.cfg.key)
 
-    def _clear(self):
+    def _clear(self) -> None:
         if self._t != (_t := int(time.time())):
             self._t = _t
             _t -= self.cfg.timeout
             while self._logs and self._logs[0]['timestamp'] > _t:
                 self._logs.pop(0)
 
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> None:
         self.cfg.update_fields(kwargs)
 
-    def add_parent(self, parent, inherite_rights={'stdout', 'log_levels', 'autosave'}):
+    def add_parent(self, parent, inherite_rights: Optional[Iterable] = None) -> None:
+        if inherite_rights is None:
+            inherite_rights = {'stdout', 'log_levels', 'autosave', 'std_logging'}
         self.parents.append(
             {
                 'parent': parent,
                 'inherite_rights': inherite_rights,
             }
         )
-        for i in {'stdout', 'autosave'}:
+        for i in {'stdout', 'autosave', 'std_logging'}:
             self.cfg[i] |= parent.cfg[i]
         if 'log_levels' in inherite_rights:
-            self.cfg.log_levels.update(self.parent.cfg.log_levels)
+            self.cfg.log_levels.update(parent.cfg.log_levels)
 
     async def log(
         self,
@@ -73,8 +79,8 @@ class Channel:
         level: str,
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
-        from_child: bool=False,
-    ):
+        from_child: bool = False,
+    ) -> None:
         if level not in self.cfg.log_levels:
             return
         args = args or tuple()
@@ -93,12 +99,15 @@ class Channel:
             }
         )
         if not from_child:
-            if self.cfg.stdout:
-                print(log_msg)
-            if self.cfg.autosave:
-                with Locks[self.cfg.log_file]:
-                    with open(self.cfg.log_file, 'a') as f:
-                        f.write(''.join([log_msg, '\n']))
+            if self.cfg.std_logging:
+                getattr(self._logger, level)(msg)
+            else:
+                if self.cfg.stdout:
+                    print(log_msg)
+                if self.cfg.autosave:
+                    with Locks[self.cfg.log_file]:
+                        with open(self.cfg.log_file, 'a') as f:
+                            f.write(''.join([log_msg, '\n']))
         if self.cfg.callback is not None:
             params = {
                 'key': self.cfg.key,
@@ -180,5 +189,5 @@ class Channel:
     def clear(self):
         self._logs.clear()
 
-    def export(self):
+    def export(self) -> List[Dict[str, Union[str, int]]]:
         return self._logs

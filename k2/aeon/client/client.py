@@ -61,7 +61,7 @@ class ClientSession(BaseHTTPSession):
                 cookie_strs = res.headers['set-cookie'].split(',')
                 i = 0
                 while i < len(cookie_strs):
-                    options = []
+                    _options = []
                     kwoptions = {}
                     kv, *pr = cookie_strs[i].split(';')
                     key, value = [k.strip() for k in kv.split('=')]
@@ -75,12 +75,12 @@ class ClientSession(BaseHTTPSession):
                                 pr_v = ','.join([pr_v, j])
                             kwoptions[pr_k] = pr_v
                         else:
-                            options.append(j.strip())
+                            _options.append(j.strip())
                     i += 1
                     res.add_cookie(
                         key,
                         value,
-                        *options,
+                        *_options,
                         **kwoptions,
                     )
                 res.headers.pop('set-cookie')
