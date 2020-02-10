@@ -1,6 +1,7 @@
 # K2
 
 [![Build Status](https://travis-ci.com/moff4/k2.svg?branch=master)](https://travis-ci.com/moff4/k2)
+[![CodeFactor](https://www.codefactor.io/repository/github/moff4/k2/badge)](https://www.codefactor.io/repository/github/moff4/k2)
 
 Микрофреймворк для удобной организации архитектуры небольших программ.  
 
