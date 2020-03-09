@@ -220,7 +220,7 @@ async def readln(reader, max_len=None, ignore_zeros=False, exception=None) -> by
 
 def mime_type(st: str) -> str:
     st = st.split('.')[-1]
-    for type_, _map in CONTENT_TYPE_MAP.values():
+    for type_, _map in CONTENT_TYPE_MAP.items():
         if st in _map:
             return '{}/{}'.format(type_, _map[st])
     return DEFAULT_CONTENT_TYPE
