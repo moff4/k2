@@ -13,6 +13,7 @@ from .sitemodules import (
 )
 from .ws import WSHandler
 from .client import ClientSession
+from .script_runner import ScriptRunner
 
 __all__ = [
     'Aeon',
@@ -20,6 +21,7 @@ __all__ = [
     'Response',
     'WSHandler',
     'SiteModule',
+    'ScriptRunner',
     'AeonResponse',
     'ClientSession',
     'StaticResponse',

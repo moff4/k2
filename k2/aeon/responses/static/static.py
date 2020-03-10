@@ -4,6 +4,7 @@ import sys
 import gzip
 
 from k2.aeon.responses.base_response import Response
+from k2.aeon.script_runner import ScriptRunner
 from k2.utils.autocfg import (
     AutoCFG,
     CacheDict,
@@ -15,7 +16,6 @@ from k2.utils.http import (
     content_type as content_type,
 )
 
-from .runner import ScriptRunner
 
 BIN = 'binary'
 TEXT = 'text'
@@ -60,7 +60,7 @@ class StaticResponse(Response):
 
     async def _run_scripts(self):
         if self.content_mod == TEXT and self._data:
-            if await (sr := ScriptRunner(text=self._data, logger=self.req.logger)).run(args=self.vars):
+            if await (sr := ScriptRunner(text=self._data, logger=self.req.logger, args=self.vars)).run():
                 self._data = sr.export()
             else:
                 self._data = SMTH_HAPPENED

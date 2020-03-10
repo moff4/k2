@@ -1,2 +1,0 @@
-
-from .tokenazer import TestTokenazer

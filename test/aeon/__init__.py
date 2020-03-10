@@ -7,6 +7,8 @@ from .parser import (
 from .restsm import TestRestSM
 from .authsm import TestAuthSM
 from .authrestsm import TestAuthRestSM
+from .script_runner import TestScriptRunner
+
 
 __all__ = [
     'TestSM',
@@ -15,4 +17,5 @@ __all__ = [
     'TestAuthRestSM',
     'TestServerParser',
     'TestClientParser',
+    'TestScriptRunner',
 ]
