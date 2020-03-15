@@ -26,7 +26,6 @@ CHANNEL_DEFAULTS = {
     'time_format': '%d.%m.%Y %H:%M:%S',
     'log_levels': {'info', 'warning', 'error'}.union({'debug'} if '--debug' in sys.argv else set()),
     'log_format': '{timestamp} -:- {level} [{key}] {msg}',
-    'std_logging': True,
 }
 
 
@@ -61,14 +60,14 @@ class Channel:
 
     def add_parent(self, parent, inherite_rights: Optional[Iterable] = None) -> None:
         if inherite_rights is None:
-            inherite_rights = {'stdout', 'log_levels', 'autosave', 'std_logging'}
+            inherite_rights = {'stdout', 'log_levels', 'autosave'}
         self.parents.append(
             {
                 'parent': parent,
                 'inherite_rights': inherite_rights,
             }
         )
-        for i in {'stdout', 'autosave', 'std_logging'}:
+        for i in {'stdout', 'autosave'}:
             self.cfg[i] |= parent.cfg[i]
         if 'log_levels' in inherite_rights:
             self.cfg.log_levels.update(parent.cfg.log_levels)
@@ -99,15 +98,12 @@ class Channel:
             }
         )
         if not from_child:
-            if self.cfg.std_logging:
-                getattr(self._logger, level)(msg)
-            else:
-                if self.cfg.stdout:
-                    print(log_msg)
-                if self.cfg.autosave:
-                    with Locks[self.cfg.log_file]:
-                        with open(self.cfg.log_file, 'a') as f:
-                            f.write(''.join([log_msg, '\n']))
+            if self.cfg.stdout:
+                print(log_msg)
+            if self.cfg.autosave:
+                with Locks[self.cfg.log_file]:
+                    with open(self.cfg.log_file, 'a') as f:
+                        f.write(''.join([log_msg, '\n']))
         if self.cfg.callback is not None:
             params = {
                 'key': self.cfg.key,
