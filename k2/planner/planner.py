@@ -87,9 +87,11 @@ class Planner:
         await self._logger.debug('planner started')
         while self.RUN:
             timeout = self.cfg.timeout
+            eps = 0.1
             for task in self.check_shedule():
                 await self._logger.debug('next task "{}" in {:.2f} sec', task.name, task.delay)
-                self.run_task(task.name)
+                if task.delay < eps:
+                    self.run_task(task.name)
                 timeout = min([task.delay / 1.5, timeout])
             await self._check_running_tasks()
             await asyncio.sleep(timeout)
